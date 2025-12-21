@@ -41,6 +41,50 @@ export type Database = {
         }
         Relationships: []
       }
+      focus_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration_minutes: number
+          id: string
+          is_completed: boolean
+          session_type: string
+          started_at: string
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_completed?: boolean
+          session_type?: string
+          started_at?: string
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_completed?: boolean
+          session_type?: string
+          started_at?: string
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "focus_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -68,6 +112,41 @@ export type Database = {
         }
         Relationships: []
       }
+      subtasks: {
+        Row: {
+          created_at: string
+          id: string
+          is_completed: boolean
+          position: number
+          task_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          position?: number
+          task_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          position?: number
+          task_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           category_id: string | null
@@ -77,7 +156,10 @@ export type Database = {
           due_date: string | null
           id: string
           is_completed: boolean
+          is_recurring: boolean
           priority: string
+          recurrence_end_date: string | null
+          recurrence_pattern: string | null
           reminder_at: string | null
           title: string
           updated_at: string
@@ -91,7 +173,10 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_completed?: boolean
+          is_recurring?: boolean
           priority?: string
+          recurrence_end_date?: string | null
+          recurrence_pattern?: string | null
           reminder_at?: string | null
           title: string
           updated_at?: string
@@ -105,7 +190,10 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_completed?: boolean
+          is_recurring?: boolean
           priority?: string
+          recurrence_end_date?: string | null
+          recurrence_pattern?: string | null
           reminder_at?: string | null
           title?: string
           updated_at?: string
@@ -120,6 +208,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          focus_duration_minutes: number | null
+          id: string
+          long_break_minutes: number | null
+          notification_enabled: boolean | null
+          preferred_study_end_time: string | null
+          preferred_study_start_time: string | null
+          reminder_before_deadline_hours: number | null
+          sessions_before_long_break: number | null
+          short_break_minutes: number | null
+          study_hours_per_day: number | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          focus_duration_minutes?: number | null
+          id?: string
+          long_break_minutes?: number | null
+          notification_enabled?: boolean | null
+          preferred_study_end_time?: string | null
+          preferred_study_start_time?: string | null
+          reminder_before_deadline_hours?: number | null
+          sessions_before_long_break?: number | null
+          short_break_minutes?: number | null
+          study_hours_per_day?: number | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          focus_duration_minutes?: number | null
+          id?: string
+          long_break_minutes?: number | null
+          notification_enabled?: boolean | null
+          preferred_study_end_time?: string | null
+          preferred_study_start_time?: string | null
+          reminder_before_deadline_hours?: number | null
+          sessions_before_long_break?: number | null
+          short_break_minutes?: number | null
+          study_hours_per_day?: number | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

@@ -18,9 +18,10 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  GraduationCap,
   Menu,
   X,
+  Timer,
+  BookOpen,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,8 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+  { path: '/planner', label: 'Planner', icon: BookOpen },
+  { path: '/focus', label: 'Focus', icon: Timer },
   { path: '/calendar', label: 'Calendar', icon: Calendar },
   { path: '/progress', label: 'Progress', icon: BarChart3 },
 ];
@@ -53,12 +56,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container flex h-16 items-center justify-between">
-          {/* Logo */}
+          {/* Logo - just the name */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-xl text-foreground">learnr</span>
+            <span className="font-bold text-xl text-foreground tracking-tight">learnr</span>
           </Link>
 
           {/* Desktop Nav */}

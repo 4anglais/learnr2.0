@@ -10,6 +10,8 @@ import Tasks from "./pages/Tasks";
 import CalendarPage from "./pages/CalendarPage";
 import Progress from "./pages/Progress";
 import Settings from "./pages/Settings";
+import FocusPage from "./pages/FocusPage";
+import PlannerPage from "./pages/PlannerPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/focus" element={<FocusPage />} />
+            <Route path="/planner" element={<PlannerPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
