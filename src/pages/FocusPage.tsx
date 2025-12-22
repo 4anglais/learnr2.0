@@ -266,14 +266,14 @@ export default function FocusPage() {
           <CardContent>
             <Select
               value={selectedTaskId}
-              onValueChange={setSelectedTaskId}
+              onValueChange={(value) => setSelectedTaskId(value === 'none' ? '' : value)}
               disabled={sessionState !== 'idle'}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a task to focus on..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No specific task</SelectItem>
+                <SelectItem value="none">No specific task</SelectItem>
                 {incompleteTasks.map((task) => (
                   <SelectItem key={task.id} value={task.id}>
                     <span className="flex items-center gap-2">
