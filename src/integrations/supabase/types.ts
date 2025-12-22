@@ -85,6 +85,44 @@ export type Database = {
           },
         ]
       }
+      milestones: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          position: number
+          roadmap_id: string
+          title: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          roadmap_id: string
+          title: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          roadmap_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_roadmap_id_fkey"
+            columns: ["roadmap_id"]
+            isOneToOne: false
+            referencedRelation: "roadmaps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -111,6 +149,141 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      roadmaps: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_weeks: number | null
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_weeks?: number | null
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_weeks?: number | null
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      steps: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          difficulty: string | null
+          id: string
+          is_completed: boolean
+          linked_task_id: string | null
+          milestone_id: string
+          position: number
+          resource_url: string | null
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          is_completed?: boolean
+          linked_task_id?: string | null
+          milestone_id: string
+          position?: number
+          resource_url?: string | null
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          is_completed?: boolean
+          linked_task_id?: string | null
+          milestone_id?: string
+          position?: number
+          resource_url?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "steps_linked_task_id_fkey"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "steps_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          is_completed: boolean
+          scheduled_date: string
+          start_time: string
+          step_id: string | null
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_completed?: boolean
+          scheduled_date: string
+          start_time: string
+          step_id?: string | null
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_completed?: boolean
+          scheduled_date?: string
+          start_time?: string
+          step_id?: string | null
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subtasks: {
         Row: {
