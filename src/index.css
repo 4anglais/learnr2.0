@@ -2,9 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* learnr Design System - Monochrome Black/Grey/White */
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* learnr Design System - Monochrome Black/Grey/White */
 
 @layer base {
   :root {

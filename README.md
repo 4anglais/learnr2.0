@@ -1,56 +1,45 @@
-LEARNR – Student Productivity Planner
+# **LEARNR – Student Productivity Planner**
 
-LEARNR is a modern productivity web app designed to help students plan, organize, and track their learning tasks efficiently.
-It combines task management, calendar planning, and progress tracking in one clean and student-focused platform.
+**LEARNR** is a modern productivity web app designed to help students **plan, organize, and track their learning tasks efficiently**.  
+It combines **task management, calendar planning, and progress tracking** in one clean, student-focused platform.
 
-🚀 Features
+---
 
-Dashboard
+## **🚀 Features**
 
-Personalized greeting
+### **Dashboard**
+- **Personalized greeting**  
+- **Today’s tasks overview**  
+- **Productivity stats cards** (completed, pending, overdue)  
 
-Today’s tasks overview
+### **Task Management**
+- **Create, edit, complete, and delete tasks**  
+- **Set priorities, categories, and due dates**  
 
-Productivity stats cards (completed, pending, overdue)
+### **Calendar View**
+- **Visual task planning by date**  
+- **Quick access to upcoming deadlines**  
 
-Task Management
+### **Progress Tracking**
+- **Weekly activity charts**  
+- **Completion statistics by category and priority**  
 
-Create, edit, complete, and delete tasks
+### **Learning Planner (Inspired by roadmap.sh)**
+- **Step-by-step visual planning**  
+- **Clear learning and task progression paths**  
 
-Set priorities, categories, and due dates
+### **Settings**
+- **Profile view**  
+- **Preferences & sign out**  
 
-Calendar View
+---
 
-Visual task planning by date
+## **🛠 Tech Stack**
 
-Quick access to upcoming deadlines
+- **Frontend:** React (Vite)  
+- **Styling:** Tailwind CSS 
+- **State Management:** React Hooks    
+- **Deployment:** Vercel 
 
-Progress Tracking
+---
 
-Weekly activity charts
-
-Completion statistics by category and priority
-
-Learning Planner (Inspired by roadmap.sh)
-
-Step-by-step visual planning
-
-Clear learning and task progression paths
-
-Settings
-
-Profile view
-
-Preferences & sign out
-
-🛠 Tech Stack
-
-Frontend: React (Vite)
-
-Styling: CSS / Tailwind CSS (planned)
-
-State Management: React Hooks
-
-Charts: Recharts / Chart.js (planned)
-
-Deployment: Netlify / Vercel (planned)
