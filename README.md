@@ -1,62 +1,56 @@
-# Welcome to your Lovable project
+LEARNR – Student Productivity Planner
 
-## Project info
+LEARNR is a modern productivity web app designed to help students plan, organize, and track their learning tasks efficiently.
+It combines task management, calendar planning, and progress tracking in one clean and student-focused platform.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+🚀 Features
 
-## How can I edit this code?
+Dashboard
 
-There are several ways of editing your application.
+Personalized greeting
 
-**Use Lovable**
+Today’s tasks overview
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Productivity stats cards (completed, pending, overdue)
 
-Changes made via Lovable will be committed automatically to this repo.
+Task Management
 
-**Use your preferred IDE**
+Create, edit, complete, and delete tasks
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Set priorities, categories, and due dates
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Calendar View
 
-Follow these steps:
+Visual task planning by date
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Quick access to upcoming deadlines
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Progress Tracking
 
-# Step 3: Install the necessary dependencies.
-npm i
+Weekly activity charts
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+Completion statistics by category and priority
 
-**Edit a file directly in GitHub**
+Learning Planner (Inspired by roadmap.sh)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Step-by-step visual planning
 
-**Use GitHub Codespaces**
+Clear learning and task progression paths
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Settings
 
-## What technologies are used for this project?
+Profile view
 
-This project is built with:
+Preferences & sign out
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+🛠 Tech Stack
 
+Frontend: React (Vite)
+
+Styling: CSS / Tailwind CSS (planned)
+
+State Management: React Hooks
+
+Charts: Recharts / Chart.js (planned)
+
+Deployment: Netlify / Vercel (planned)
