@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export interface StudySession {
   id: string;
@@ -25,16 +26,27 @@ export function useStudySessions(weekStart?: Date) {
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ['studySessions', user?.id, format(currentWeekStart, 'yyyy-MM-dd')],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('study_sessions')
-        .select('*')
-        .gte('scheduled_date', format(currentWeekStart, 'yyyy-MM-dd'))
-        .lte('scheduled_date', format(currentWeekEnd, 'yyyy-MM-dd'))
-        .order('scheduled_date', { ascending: true })
-        .order('start_time', { ascending: true });
-
-      if (error) throw error;
-      return data as StudySession[];
+      if (!user) return [];
+      
+      const startDateStr = format(currentWeekStart, 'yyyy-MM-dd');
+      const endDateStr = format(currentWeekEnd, 'yyyy-MM-dd');
+      
+      const q = query(
+        collection(db, 'study_sessions'),
+        where('user_id', '==', user.id),
+        where('scheduled_date', '>=', startDateStr),
+        where('scheduled_date', '<=', endDateStr),
+        orderBy('scheduled_date', 'asc'),
+        orderBy('start_time', 'asc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const sessions = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as StudySession[];
+      
+      return sessions;
     },
     enabled: !!user,
   });
@@ -47,14 +59,22 @@ export function useStudySessions(weekStart?: Date) {
       start_time: string;
       duration_minutes?: number;
     }) => {
-      const { data: session, error } = await supabase
-        .from('study_sessions')
-        .insert({ ...data, user_id: user!.id })
-        .select()
-        .single();
+      if (!user) throw new Error('Not authenticated');
 
-      if (error) throw error;
-      return session;
+      const docRef = await addDoc(collection(db, 'study_sessions'), {
+        ...data,
+        user_id: user.id,
+        is_completed: false,
+        created_at: new Date(),
+      });
+
+      return {
+        id: docRef.id,
+        ...data,
+        user_id: user.id,
+        is_completed: false,
+        created_at: new Date().toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studySessions'] });
@@ -63,12 +83,8 @@ export function useStudySessions(weekStart?: Date) {
 
   const updateSession = useMutation({
     mutationFn: async ({ id, ...data }: Partial<StudySession> & { id: string }) => {
-      const { error } = await supabase
-        .from('study_sessions')
-        .update(data)
-        .eq('id', id);
-
-      if (error) throw error;
+      const sessionRef = doc(db, 'study_sessions', id);
+      await updateDoc(sessionRef, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studySessions'] });
@@ -77,8 +93,8 @@ export function useStudySessions(weekStart?: Date) {
 
   const deleteSession = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('study_sessions').delete().eq('id', id);
-      if (error) throw error;
+      const sessionRef = doc(db, 'study_sessions', id);
+      await deleteDoc(sessionRef);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studySessions'] });
@@ -87,12 +103,8 @@ export function useStudySessions(weekStart?: Date) {
 
   const toggleComplete = useMutation({
     mutationFn: async ({ id, is_completed }: { id: string; is_completed: boolean }) => {
-      const { error } = await supabase
-        .from('study_sessions')
-        .update({ is_completed })
-        .eq('id', id);
-
-      if (error) throw error;
+      const sessionRef = doc(db, 'study_sessions', id);
+      await updateDoc(sessionRef, { is_completed });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studySessions'] });

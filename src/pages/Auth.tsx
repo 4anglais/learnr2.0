@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { GraduationCap, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Chrome } from 'lucide-react';
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { user, signIn, signUp, loading: authLoading } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   // Login form state
@@ -80,6 +81,19 @@ export default function Auth() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    const { error } = await signInWithGoogle();
+    setIsLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Welcome!');
+      navigate('/');
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -93,9 +107,6 @@ export default function Auth() {
       <div className="w-full max-w-md animate-fade-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-glow mb-4">
-            <GraduationCap className="h-8 w-8 text-primary-foreground" />
-          </div>
           <h1 className="text-3xl font-bold text-foreground">learnr</h1>
           <p className="text-muted-foreground mt-2">Your student productivity companion</p>
         </div>
@@ -146,6 +157,24 @@ export default function Auth() {
                       </>
                     ) : (
                       'Sign In'
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      </>
+                    ) : (
+                      <>
+                        <Chrome className="mr-2 h-4 w-4" />
+                        Sign in with Google
+                      </>
                     )}
                   </Button>
                 </form>
@@ -201,6 +230,24 @@ export default function Auth() {
                       </>
                     ) : (
                       'Create Account'
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      </>
+                    ) : (
+                      <>
+                        <Chrome className="mr-2 h-4 w-4" />
+                        Sign up with Google
+                      </>
                     )}
                   </Button>
                 </form>

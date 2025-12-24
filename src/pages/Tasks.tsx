@@ -65,9 +65,10 @@ export default function Tasks() {
           if (!a.due_date) return 1;
           if (!b.due_date) return -1;
           return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-        case 'priority':
+        case 'priority': {
           const priorityOrder = { high: 0, medium: 1, low: 2 };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }
         case 'created':
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         default:

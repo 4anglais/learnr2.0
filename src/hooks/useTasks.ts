@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export interface Task {
   id: string;
@@ -42,22 +43,19 @@ export function useTasks() {
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
-        .from('tasks')
-        .select(`
-          *,
-          categories (
-            id,
-            name,
-            color,
-            icon
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as Task[];
+      const q = query(
+        collection(db, 'tasks'),
+        where('user_id', '==', user.id),
+        orderBy('created_at', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const tasks = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Task[];
+      
+      return tasks;
     },
     enabled: !!user,
   });
@@ -66,22 +64,34 @@ export function useTasks() {
     mutationFn: async (input: CreateTaskInput) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({
-          user_id: user.id,
-          title: input.title,
-          description: input.description || null,
-          due_date: input.due_date || null,
-          priority: input.priority || 'medium',
-          category_id: input.category_id || null,
-          reminder_at: input.reminder_at || null,
-        })
-        .select()
-        .single();
+      const docRef = await addDoc(collection(db, 'tasks'), {
+        user_id: user.id,
+        title: input.title,
+        description: input.description || null,
+        due_date: input.due_date || null,
+        priority: input.priority || 'medium',
+        category_id: input.category_id || null,
+        reminder_at: input.reminder_at || null,
+        is_completed: false,
+        completed_at: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
 
-      if (error) throw error;
-      return data;
+      return {
+        id: docRef.id,
+        user_id: user.id,
+        title: input.title,
+        description: input.description || null,
+        due_date: input.due_date || null,
+        priority: input.priority || 'medium',
+        category_id: input.category_id || null,
+        reminder_at: input.reminder_at || null,
+        is_completed: false,
+        completed_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -95,15 +105,14 @@ export function useTasks() {
 
   const updateTask = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Task> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const taskRef = doc(db, 'tasks', id);
+      const updateData = {
+        ...updates,
+        updated_at: new Date(),
+      };
+      
+      await updateDoc(taskRef, updateData);
+      return { id, ...updates };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -116,18 +125,15 @@ export function useTasks() {
 
   const toggleComplete = useMutation({
     mutationFn: async ({ id, is_completed }: { id: string; is_completed: boolean }) => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update({
-          is_completed,
-          completed_at: is_completed ? new Date().toISOString() : null,
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const taskRef = doc(db, 'tasks', id);
+      const updateData = {
+        is_completed,
+        completed_at: is_completed ? new Date() : null,
+        updated_at: new Date(),
+      };
+      
+      await updateDoc(taskRef, updateData);
+      return { is_completed };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -143,12 +149,8 @@ export function useTasks() {
 
   const deleteTask = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      const taskRef = doc(db, 'tasks', id);
+      await deleteDoc(taskRef);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

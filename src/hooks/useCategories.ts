@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export interface Category {
   id: string;
@@ -29,14 +30,19 @@ export function useCategories() {
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      return data as Category[];
+      const q = query(
+        collection(db, 'categories'),
+        where('user_id', '==', user.id),
+        orderBy('created_at', 'asc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const categories = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Category[];
+      
+      return categories;
     },
     enabled: !!user,
   });
@@ -45,20 +51,18 @@ export function useCategories() {
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
 
-      const categoriesToCreate = DEFAULT_CATEGORIES.map(cat => ({
-        user_id: user.id,
-        name: cat.name,
-        color: cat.color,
-        icon: cat.icon,
-      }));
+      const promises = DEFAULT_CATEGORIES.map(cat =>
+        addDoc(collection(db, 'categories'), {
+          user_id: user.id,
+          name: cat.name,
+          color: cat.color,
+          icon: cat.icon,
+          created_at: new Date(),
+        })
+      );
 
-      const { data, error } = await supabase
-        .from('categories')
-        .insert(categoriesToCreate)
-        .select();
-
-      if (error) throw error;
-      return data;
+      await Promise.all(promises);
+      return [];
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -69,19 +73,22 @@ export function useCategories() {
     mutationFn: async (input: { name: string; color: string; icon?: string }) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('categories')
-        .insert({
-          user_id: user.id,
-          name: input.name,
-          color: input.color,
-          icon: input.icon || null,
-        })
-        .select()
-        .single();
+      const docRef = await addDoc(collection(db, 'categories'), {
+        user_id: user.id,
+        name: input.name,
+        color: input.color,
+        icon: input.icon || null,
+        created_at: new Date(),
+      });
 
-      if (error) throw error;
-      return data;
+      return {
+        id: docRef.id,
+        user_id: user.id,
+        name: input.name,
+        color: input.color,
+        icon: input.icon || null,
+        created_at: new Date().toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });

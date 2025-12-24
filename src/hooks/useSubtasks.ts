@@ -1,6 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/integrations/firebase/config';
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  limit,
+} from 'firebase/firestore';
 import { toast } from 'sonner';
 
 export interface Subtask {
@@ -20,37 +31,54 @@ export function useSubtasks(taskId: string | null) {
     queryFn: async () => {
       if (!taskId) return [];
       
-      const { data, error } = await supabase
-        .from('subtasks')
-        .select('*')
-        .eq('task_id', taskId)
-        .order('position', { ascending: true });
-
-      if (error) throw error;
-      return data as Subtask[];
+      const q = query(
+        collection(db, 'subtasks'),
+        where('task_id', '==', taskId),
+        orderBy('position', 'asc')
+      );
+      
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString()
+        };
+      }) as Subtask[];
     },
     enabled: !!taskId,
   });
 
   const createSubtask = useMutation({
     mutationFn: async ({ task_id, title }: { task_id: string; title: string }) => {
-      const { data: existing } = await supabase
-        .from('subtasks')
-        .select('position')
-        .eq('task_id', task_id)
-        .order('position', { ascending: false })
-        .limit(1);
-
+      // Get current max position
+      const q = query(
+        collection(db, 'subtasks'),
+        where('task_id', '==', task_id),
+        orderBy('position', 'desc'),
+        limit(1)
+      );
+      const snapshot = await getDocs(q);
+      const existing = snapshot.docs.map(doc => doc.data());
+      
       const nextPosition = existing && existing.length > 0 ? existing[0].position + 1 : 0;
 
-      const { data, error } = await supabase
-        .from('subtasks')
-        .insert({ task_id, title, position: nextPosition })
-        .select()
-        .single();
+      const newSubtask = {
+        task_id,
+        title,
+        position: nextPosition,
+        is_completed: false,
+        created_at: new Date()
+      };
 
-      if (error) throw error;
-      return data;
+      const docRef = await addDoc(collection(db, 'subtasks'), newSubtask);
+      
+      return {
+        id: docRef.id,
+        ...newSubtask,
+        created_at: newSubtask.created_at.toISOString()
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks'] });
@@ -62,15 +90,9 @@ export function useSubtasks(taskId: string | null) {
 
   const toggleSubtask = useMutation({
     mutationFn: async ({ id, is_completed }: { id: string; is_completed: boolean }) => {
-      const { data, error } = await supabase
-        .from('subtasks')
-        .update({ is_completed })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const docRef = doc(db, 'subtasks', id);
+      await updateDoc(docRef, { is_completed });
+      return { id, is_completed };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks'] });
@@ -79,12 +101,7 @@ export function useSubtasks(taskId: string | null) {
 
   const deleteSubtask = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('subtasks')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await deleteDoc(doc(db, 'subtasks', id));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks'] });

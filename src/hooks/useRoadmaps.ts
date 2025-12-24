@@ -1,7 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  limit,
+  Timestamp,
+  documentId
+} from 'firebase/firestore';
 
 export interface Step {
   id: string;
@@ -38,83 +52,141 @@ export interface Roadmap {
   milestones?: Milestone[];
 }
 
+const convertDate = (date: any): string => {
+  if (!date) return new Date().toISOString();
+  if (date.toDate) return date.toDate().toISOString();
+  if (date instanceof Date) return date.toISOString();
+  return date;
+};
+
 export function useRoadmaps() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: roadmaps = [], isLoading } = useQuery({
-    queryKey: ['roadmaps', user?.id],
+    queryKey: ['roadmaps', user?.uid],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('roadmaps')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as Roadmap[];
+      if (!user) return [];
+      const q = query(
+        collection(db, 'roadmaps'),
+        where('user_id', '==', user.uid),
+        orderBy('created_at', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        created_at: convertDate(doc.data().created_at),
+        updated_at: convertDate(doc.data().updated_at),
+      })) as Roadmap[];
     },
     enabled: !!user,
   });
 
   const { data: activeRoadmap } = useQuery({
-    queryKey: ['activeRoadmap', user?.id],
+    queryKey: ['activeRoadmap', user?.uid],
     queryFn: async () => {
-      const { data: roadmapData, error: roadmapError } = await supabase
-        .from('roadmaps')
-        .select('*')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (roadmapError) throw roadmapError;
-      if (!roadmapData) return null;
+      if (!user) return null;
+      
+      // Fetch most recent roadmap
+      const q = query(
+        collection(db, 'roadmaps'),
+        where('user_id', '==', user.uid),
+        orderBy('updated_at', 'desc'),
+        limit(1)
+      );
+      
+      const roadmapSnapshot = await getDocs(q);
+      if (roadmapSnapshot.empty) return null;
+      
+      const roadmapDoc = roadmapSnapshot.docs[0];
+      const roadmapData = {
+        id: roadmapDoc.id,
+        ...roadmapDoc.data(),
+        created_at: convertDate(roadmapDoc.data().created_at),
+        updated_at: convertDate(roadmapDoc.data().updated_at),
+      } as Roadmap;
 
       // Fetch milestones
-      const { data: milestonesData, error: milestonesError } = await supabase
-        .from('milestones')
-        .select('*')
-        .eq('roadmap_id', roadmapData.id)
-        .order('position', { ascending: true });
-
-      if (milestonesError) throw milestonesError;
+      const milestonesQuery = query(
+        collection(db, 'milestones'),
+        where('roadmap_id', '==', roadmapData.id),
+        orderBy('position', 'asc')
+      );
+      
+      const milestonesSnapshot = await getDocs(milestonesQuery);
+      const milestonesData = milestonesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        created_at: convertDate(doc.data().created_at),
+      })) as Milestone[];
 
       // Fetch steps for all milestones
-      const milestoneIds = milestonesData?.map(m => m.id) || [];
+      const milestoneIds = milestonesData.map(m => m.id);
       let stepsData: Step[] = [];
       
       if (milestoneIds.length > 0) {
-        const { data: steps, error: stepsError } = await supabase
-          .from('steps')
-          .select('*')
-          .in('milestone_id', milestoneIds)
-          .order('position', { ascending: true });
+        // Firestore 'in' query supports max 10 values
+        const chunks = [];
+        for (let i = 0; i < milestoneIds.length; i += 10) {
+          chunks.push(milestoneIds.slice(i, i + 10));
+        }
 
-        if (stepsError) throw stepsError;
-        stepsData = steps as Step[];
+        const stepsPromises = chunks.map(chunk => {
+          const stepsQuery = query(
+            collection(db, 'steps'),
+            where('milestone_id', 'in', chunk),
+            orderBy('position', 'asc')
+          );
+          return getDocs(stepsQuery);
+        });
+
+        const stepsSnapshots = await Promise.all(stepsPromises);
+        
+        stepsSnapshots.forEach(snapshot => {
+          const steps = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            created_at: convertDate(doc.data().created_at),
+            completed_at: doc.data().completed_at ? convertDate(doc.data().completed_at) : null,
+          })) as Step[];
+          stepsData = [...stepsData, ...steps];
+        });
+        
+        // Sort all steps by position just in case (though we sorted in query)
+        stepsData.sort((a, b) => a.position - b.position);
       }
 
       // Combine data
-      const milestones: Milestone[] = (milestonesData || []).map(m => ({
+      const milestones: Milestone[] = milestonesData.map(m => ({
         ...m,
         steps: stepsData.filter(s => s.milestone_id === m.id),
       }));
 
-      return { ...roadmapData, milestones } as Roadmap;
+      return { ...roadmapData, milestones };
     },
     enabled: !!user,
   });
 
   const createRoadmap = useMutation({
     mutationFn: async (data: { title: string; description?: string; duration_weeks?: number }) => {
-      const { data: roadmap, error } = await supabase
-        .from('roadmaps')
-        .insert({ ...data, user_id: user!.id })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return roadmap;
+      const timestamp = new Date();
+      const newRoadmap = {
+        ...data,
+        user_id: user!.uid,
+        created_at: timestamp,
+        updated_at: timestamp,
+        is_completed: false,
+      };
+      
+      const docRef = await addDoc(collection(db, 'roadmaps'), newRoadmap);
+      return {
+        id: docRef.id,
+        ...newRoadmap,
+        created_at: timestamp.toISOString(),
+        updated_at: timestamp.toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roadmaps'] });
@@ -128,14 +200,18 @@ export function useRoadmaps() {
 
   const createMilestone = useMutation({
     mutationFn: async (data: { roadmap_id: string; title: string; description?: string; color?: string; position: number }) => {
-      const { data: milestone, error } = await supabase
-        .from('milestones')
-        .insert(data)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return milestone;
+      const timestamp = new Date();
+      const newMilestone = {
+        ...data,
+        created_at: timestamp,
+      };
+      
+      const docRef = await addDoc(collection(db, 'milestones'), newMilestone);
+      return {
+        id: docRef.id,
+        ...newMilestone,
+        created_at: timestamp.toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeRoadmap'] });
@@ -150,14 +226,19 @@ export function useRoadmaps() {
       resource_url?: string;
       position: number;
     }) => {
-      const { data: step, error } = await supabase
-        .from('steps')
-        .insert(data)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return step;
+      const timestamp = new Date();
+      const newStep = {
+        ...data,
+        is_completed: false,
+        created_at: timestamp,
+      };
+      
+      const docRef = await addDoc(collection(db, 'steps'), newStep);
+      return {
+        id: docRef.id,
+        ...newStep,
+        created_at: timestamp.toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeRoadmap'] });
@@ -166,15 +247,11 @@ export function useRoadmaps() {
 
   const toggleStepComplete = useMutation({
     mutationFn: async ({ id, is_completed }: { id: string; is_completed: boolean }) => {
-      const { error } = await supabase
-        .from('steps')
-        .update({ 
-          is_completed, 
-          completed_at: is_completed ? new Date().toISOString() : null 
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      const docRef = doc(db, 'steps', id);
+      await updateDoc(docRef, { 
+        is_completed, 
+        completed_at: is_completed ? new Date() : null 
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeRoadmap'] });
@@ -183,8 +260,7 @@ export function useRoadmaps() {
 
   const deleteRoadmap = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('roadmaps').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'roadmaps', id));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roadmaps'] });
@@ -195,8 +271,7 @@ export function useRoadmaps() {
 
   const deleteMilestone = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('milestones').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'milestones', id));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeRoadmap'] });
@@ -205,8 +280,7 @@ export function useRoadmaps() {
 
   const deleteStep = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('steps').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'steps', id));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeRoadmap'] });

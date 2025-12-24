@@ -1,73 +1,231 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendEmailVerification, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { auth, db } from '@/integrations/firebase/config';
+import { doc, setDoc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  sendVerificationEmail: () => Promise<{ error: Error | null }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
+  changeEmail: (currentPassword: string, newEmail: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (!userDoc.exists()) {
+          const fullName = currentUser.displayName || 'User';
+          const baseUsername = fullName
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_-]/g, '');
+          let username = baseUsername;
+          let counter = 1;
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+          const checkUsernameExists = async (testUsername: string) => {
+            const q = query(
+              collection(db, 'users'),
+              where('username', '==', testUsername)
+            );
+            const snapshot = await getDocs(q);
+            return !snapshot.empty;
+          };
+
+          while (await checkUsernameExists(username)) {
+            username = `${baseUsername}${counter}`;
+            counter++;
+          }
+
+          await setDoc(doc(db, 'users', currentUser.uid), {
+            email: currentUser.email,
+            fullName,
+            nickname: '',
+            username,
+            avatar_url: currentUser.photoURL || null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
+      
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-    return { error };
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      const baseUsername = fullName
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_-]/g, '');
+      let username = baseUsername;
+      let counter = 1;
+
+      const checkUsernameExists = async (testUsername: string) => {
+        const q = query(
+          collection(db, 'users'),
+          where('username', '==', testUsername)
+        );
+        const snapshot = await getDocs(q);
+        return !snapshot.empty;
+      };
+
+      while (await checkUsernameExists(username)) {
+        username = `${baseUsername}${counter}`;
+        counter++;
+      }
+
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email,
+        fullName,
+        nickname: '',
+        username,
+        avatar_url: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Sign up failed') };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Sign in failed') };
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      if (!userDoc.exists()) {
+        const fullName = result.user.displayName || 'User';
+        const baseUsername = fullName
+          .toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_-]/g, '');
+        let username = baseUsername;
+        let counter = 1;
+
+        const checkUsernameExists = async (testUsername: string) => {
+          const q = query(
+            collection(db, 'users'),
+            where('username', '==', testUsername)
+          );
+          const snapshot = await getDocs(q);
+          return !snapshot.empty;
+        };
+
+        while (await checkUsernameExists(username)) {
+          username = `${baseUsername}${counter}`;
+          counter++;
+        }
+
+        await setDoc(doc(db, 'users', result.user.uid), {
+          email: result.user.email,
+          fullName,
+          nickname: '',
+          username,
+          avatar_url: result.user.photoURL || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Google sign in failed') };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(auth);
+  };
+
+  const sendVerificationEmail = async () => {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('No user logged in');
+      }
+      await sendEmailVerification(auth.currentUser);
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Failed to send verification email') };
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      if (!auth.currentUser || !auth.currentUser.email) {
+        throw new Error('No user logged in');
+      }
+
+      const credential = EmailAuthProvider.credential(
+        auth.currentUser.email,
+        currentPassword
+      );
+
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await updatePassword(auth.currentUser, newPassword);
+
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Failed to change password') };
+    }
+  };
+
+  const changeEmail = async (currentPassword: string, newEmail: string) => {
+    try {
+      if (!auth.currentUser || !auth.currentUser.email) {
+        throw new Error('No user logged in');
+      }
+
+      const credential = EmailAuthProvider.credential(
+        auth.currentUser.email,
+        currentPassword
+      );
+
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await updateEmail(auth.currentUser, newEmail);
+
+      await setDoc(doc(db, 'users', auth.currentUser.uid), {
+        email: newEmail,
+      }, { merge: true });
+
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Failed to change email') };
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, sendVerificationEmail, changePassword, changeEmail }}>
       {children}
     </AuthContext.Provider>
   );

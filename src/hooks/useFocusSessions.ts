@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, doc, limit } from 'firebase/firestore';
 
 export interface FocusSession {
   id: string;
@@ -24,15 +25,20 @@ export function useFocusSessions() {
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
-        .from('focus_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('started_at', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      return data as FocusSession[];
+      const q = query(
+        collection(db, 'focus_sessions'),
+        where('user_id', '==', user.id),
+        orderBy('started_at', 'desc'),
+        limit(100)
+      );
+      
+      const snapshot = await getDocs(q);
+      const sessions = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as FocusSession[];
+      
+      return sessions;
     },
     enabled: !!user,
   });
@@ -45,19 +51,28 @@ export function useFocusSessions() {
     }) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('focus_sessions')
-        .insert({
-          user_id: user.id,
-          task_id: input.task_id || null,
-          duration_minutes: input.duration_minutes,
-          session_type: input.session_type,
-        })
-        .select()
-        .single();
+      const docRef = await addDoc(collection(db, 'focus_sessions'), {
+        user_id: user.id,
+        task_id: input.task_id || null,
+        duration_minutes: input.duration_minutes,
+        session_type: input.session_type,
+        is_completed: false,
+        started_at: new Date(),
+        completed_at: null,
+        created_at: new Date(),
+      });
 
-      if (error) throw error;
-      return data;
+      return {
+        id: docRef.id,
+        user_id: user.id,
+        task_id: input.task_id || null,
+        duration_minutes: input.duration_minutes,
+        session_type: input.session_type,
+        is_completed: false,
+        started_at: new Date().toISOString(),
+        completed_at: null,
+        created_at: new Date().toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['focus_sessions'] });
@@ -66,18 +81,12 @@ export function useFocusSessions() {
 
   const completeSession = useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase
-        .from('focus_sessions')
-        .update({
-          is_completed: true,
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const sessionRef = doc(db, 'focus_sessions', id);
+      await updateDoc(sessionRef, {
+        is_completed: true,
+        completed_at: new Date(),
+      });
+      return { is_completed: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['focus_sessions'] });
@@ -97,7 +106,7 @@ export function useFocusSessions() {
     today.setHours(0, 0, 0, 0);
     
     let streak = 0;
-    let currentDate = new Date(today);
+    const currentDate = new Date(today);
     
     for (let i = 0; i < 365; i++) {
       const dayStart = new Date(currentDate);

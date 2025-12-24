@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/integrations/firebase/config';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 
 export interface UserSettings {
-  id: string;
+  id: string; // This will match the user's UID
   user_id: string;
   study_hours_per_day: number;
   preferred_study_start_time: string;
@@ -39,18 +40,22 @@ export function useUserSettings() {
   const queryClient = useQueryClient();
 
   const settingsQuery = useQuery({
-    queryKey: ['user_settings', user?.id],
+    queryKey: ['user_settings', user?.uid],
     queryFn: async () => {
       if (!user) return null;
       
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      try {
+        const docRef = doc(db, 'user_settings', user.uid);
+        const docSnap = await getDoc(docRef);
 
-      if (error) throw error;
-      return data as UserSettings | null;
+        if (docSnap.exists()) {
+          return { id: docSnap.id, ...docSnap.data() } as UserSettings;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+        throw error;
+      }
     },
     enabled: !!user,
   });
@@ -59,17 +64,17 @@ export function useUserSettings() {
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('user_settings')
-        .insert({
-          user_id: user.id,
-          ...defaultSettings,
-        })
-        .select()
-        .single();
+      const now = new Date().toISOString();
+      const newSettings: UserSettings = {
+        id: user.uid,
+        user_id: user.uid,
+        ...defaultSettings,
+        created_at: now,
+        updated_at: now,
+      };
 
-      if (error) throw error;
-      return data;
+      await setDoc(doc(db, 'user_settings', user.uid), newSettings);
+      return newSettings;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user_settings'] });
@@ -80,21 +85,21 @@ export function useUserSettings() {
     mutationFn: async (updates: Partial<UserSettings>) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('user_settings')
-        .update(updates)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+      const docRef = doc(db, 'user_settings', user.uid);
+      const updatedData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
 
-      if (error) throw error;
-      return data;
+      await setDoc(docRef, updatedData, { merge: true });
+      return { id: user.uid, ...updatedData };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user_settings'] });
       toast.success('Settings saved');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error updating settings:', error);
       toast.error('Failed to save settings');
     },
   });

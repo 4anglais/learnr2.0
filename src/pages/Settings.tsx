@@ -1,9 +1,7 @@
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/hooks/useProfile';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
@@ -16,18 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { User, Bell, Palette, LogOut, Clock, Sun, Moon, Monitor } from 'lucide-react';
+import { Bell, Palette, LogOut, Clock, Sun, Moon, Monitor } from 'lucide-react';
+import { ProfileEditCard } from '@/components/ProfileEditCard';
+import { AccountSecurityCard } from '@/components/AccountSecurityCard';
 
 export default function Settings() {
-  const { signOut, user } = useAuth();
-  const { profile } = useProfile();
+  const { signOut } = useAuth();
   const { settings, updateSettings } = useUserSettings();
-
-  const initials = profile?.full_name
-    ?.split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase() || 'U';
 
   return (
     <AppLayout>
@@ -39,28 +32,10 @@ export default function Settings() {
         </div>
 
         {/* Profile Section */}
-        <Card className="border-border/50 shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile
-            </CardTitle>
-            <CardDescription>Your personal information</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="bg-primary text-primary-foreground text-xl font-medium">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-semibold text-foreground">{profile?.full_name || 'User'}</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ProfileEditCard />
+
+        {/* Account Security Section */}
+        <AccountSecurityCard />
 
         {/* Study Preferences */}
         <Card className="border-border/50 shadow-card">
