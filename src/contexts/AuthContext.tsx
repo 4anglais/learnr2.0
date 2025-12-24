@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendEmailVerification, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendEmailVerification, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
 import { auth, db } from '@/integrations/firebase/config';
 import { doc, setDoc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 
@@ -10,6 +10,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
   sendVerificationEmail: () => Promise<{ error: Error | null }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   changeEmail: (currentPassword: string, newEmail: string) => Promise<{ error: Error | null }>;
@@ -72,6 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
+      // Update profile immediately to ensure consistency
+      await updateProfile(userCredential.user, {
+        displayName: fullName
+      });
+
       const baseUsername = fullName
         .toLowerCase()
         .replace(/\s+/g, '_')
@@ -168,6 +174,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await firebaseSignOut(auth);
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Failed to send reset email') };
+    }
+  };
+
   const sendVerificationEmail = async () => {
     try {
       if (!auth.currentUser) {
@@ -225,7 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, sendVerificationEmail, changePassword, changeEmail }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, sendVerificationEmail, changePassword, changeEmail }}>
       {children}
     </AuthContext.Provider>
   );

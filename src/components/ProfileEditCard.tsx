@@ -71,6 +71,12 @@ export function ProfileEditCard() {
   const handleUsernameChange = async (value: string) => {
     setFormData((prev) => ({ ...prev, username: value }));
     
+    // If username is empty, it's valid (will be auto-generated)
+    if (value.length === 0) {
+      setUsernameError('');
+      return;
+    }
+
     if (value.length < 3) {
       setUsernameError('Username must be at least 3 characters');
       return;
@@ -240,7 +246,7 @@ export function ProfileEditCard() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="username">Username (Unique)</Label>
+                <Label htmlFor="username">Username (Optional - Auto-generated if empty)</Label>
                 <Input
                   id="username"
                   value={formData.username}
@@ -254,7 +260,7 @@ export function ProfileEditCard() {
                   <p className="text-xs text-success">Username available ✓</p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    3+ characters, letters, numbers, hyphens, underscores only
+                    Leave empty to auto-generate from full name
                   </p>
                 )}
               </div>

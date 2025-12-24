@@ -1,18 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Chrome } from 'lucide-react';
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { user, signIn, signUp, signInWithGoogle, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
+  const { user, signIn, signUp, signInWithGoogle, resetPassword, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   // Login form state
@@ -22,7 +33,12 @@ export default function Auth() {
   // Signup form state
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [signupName, setSignupName] = useState('');
+  
+  // Reset password state
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -48,6 +64,7 @@ export default function Auth() {
         toast.error(error.message);
       }
     } else {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Welcome back!');
       navigate('/');
     }
@@ -55,8 +72,13 @@ export default function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupEmail || !signupPassword || !signupName) {
+    if (!signupEmail || !signupPassword || !signupConfirmPassword || !signupName) {
       toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (signupPassword !== signupConfirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
 
@@ -76,6 +98,7 @@ export default function Auth() {
         toast.error(error.message);
       }
     } else {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Account created successfully!');
       navigate('/');
     }
@@ -89,8 +112,29 @@ export default function Auth() {
     if (error) {
       toast.error(error.message);
     } else {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Welcome!');
       navigate('/');
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error('Please enter your email');
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await resetPassword(resetEmail);
+    setIsLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Password reset email sent!');
+      setIsResetDialogOpen(false);
+      setResetEmail('');
     }
   };
 
@@ -135,7 +179,49 @@ export default function Auth() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="login-password">Password</Label>
+                      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="link" className="p-0 h-auto font-normal text-xs">
+                            Forgot password?
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Reset Password</DialogTitle>
+                            <DialogDescription>
+                              Enter your email address and we'll send you a link to reset your password.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <form onSubmit={handleResetPassword} className="space-y-4 mt-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="reset-email">Email</Label>
+                              <Input
+                                id="reset-email"
+                                type="email"
+                                placeholder="you@example.com"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                disabled={isLoading}
+                              />
+                            </div>
+                            <DialogFooter>
+                              <Button type="submit" disabled={isLoading}>
+                                {isLoading ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Sending...
+                                  </>
+                                ) : (
+                                  'Send Reset Link'
+                                )}
+                              </Button>
+                            </DialogFooter>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                     <Input
                       id="login-password"
                       type="password"
@@ -217,6 +303,17 @@ export default function Auth() {
                     <p className="text-xs text-muted-foreground">
                       Must be at least 6 characters
                     </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                    <Input
+                      id="signup-confirm-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={signupConfirmPassword}
+                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                      disabled={isLoading}
+                    />
                   </div>
                   <Button
                     type="submit"

@@ -3,7 +3,7 @@ import { db } from '@/integrations/firebase/config';
 import { storage } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export interface UserProfile {
@@ -60,17 +60,50 @@ export function useProfileUpdate() {
         }
       }
 
-      if (data.username) {
-        const isAvailable = await checkUsername(data.username);
-        if (!isAvailable) {
-          throw new Error('Username is already taken');
+      let newUsername = data.username;
+
+      // Handle auto-generation if username is empty string (cleared by user)
+      if (data.username === '') {
+        const currentUserRef = doc(db, 'users', user.uid);
+        const currentUserDoc = await getDoc(currentUserRef);
+        const currentData = currentUserDoc.data();
+        const fullNameToUse = data.fullName || currentData?.fullName || 'User';
+
+        const baseUsername = fullNameToUse
+          .toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_-]/g, '');
+        
+        let generatedUsername = baseUsername;
+        let counter = 1;
+
+        // Ensure uniqueness for generated username
+        // Note: This might collide if user repeatedly clears username, but we check availability
+        while (!(await checkUsername(generatedUsername))) {
+           generatedUsername = `${baseUsername}${counter}`;
+           counter++;
+        }
+        newUsername = generatedUsername;
+      }
+
+      if (newUsername) {
+        // Check if username is different from current
+        const currentUserRef = doc(db, 'users', user.uid);
+        const currentUserDoc = await getDoc(currentUserRef);
+        const currentUsername = currentUserDoc.data()?.username;
+
+        if (currentUsername !== newUsername.toLowerCase()) {
+          const isAvailable = await checkUsername(newUsername);
+          if (!isAvailable) {
+            throw new Error('Username is already taken');
+          }
         }
       }
 
       const updateData: Record<string, string | null> = {};
       if (data.fullName) updateData.fullName = data.fullName;
       if (data.nickname) updateData.nickname = data.nickname;
-      if (data.username) updateData.username = data.username.toLowerCase();
+      if (newUsername) updateData.username = newUsername.toLowerCase();
       if (avatarUrl) updateData.avatar_url = avatarUrl;
 
       if (Object.keys(updateData).length === 0) {

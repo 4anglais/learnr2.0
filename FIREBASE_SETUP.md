@@ -254,7 +254,10 @@ service firebase.storage {
    - Go to Authentication
    - Enable "Email/Password"
    - Enable "Google"
-   - Add your app domain to authorized domains
+   - Add your app domain to authorized domains (Authentication > Settings > Authorized domains)
+     - Add `localhost`
+     - Add `127.0.0.1` if needed
+     - Add any other domain you use (e.g., `192.168.x.x` for local network testing, or your deployed Vercel/Netlify domain)
 
 ## Notes
 
