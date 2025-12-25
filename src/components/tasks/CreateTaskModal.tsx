@@ -31,7 +31,7 @@ interface CreateTaskModalProps {
 
 export default function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
   const { createTask } = useTasks();
-  const { categories, createDefaultCategories } = useCategories();
+  const { categories, isLoading: categoriesLoading, createDefaultCategories } = useCategories();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -41,10 +41,10 @@ export default function CreateTaskModal({ open, onOpenChange }: CreateTaskModalP
 
   // Create default categories if none exist
   useEffect(() => {
-    if (open && categories.length === 0) {
+    if (open && !categoriesLoading && categories.length === 0 && !createDefaultCategories.isPending) {
       createDefaultCategories.mutate();
     }
-  }, [open, categories.length]);
+  }, [open, categoriesLoading, categories.length, createDefaultCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,22 +160,26 @@ export default function CreateTaskModal({ open, onOpenChange }: CreateTaskModalP
 
           <div className="space-y-2">
             <Label>Category</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
+            <Select value={categoryId} onValueChange={setCategoryId} disabled={categoriesLoading}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
+                <SelectValue placeholder={categoriesLoading ? "Loading categories..." : "Select a category"} />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      {category.icon} {category.name}
-                    </span>
-                  </SelectItem>
-                ))}
+                {categories.length === 0 && !categoriesLoading ? (
+                  <SelectItem value="" disabled>No categories available</SelectItem>
+                ) : (
+                  categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.icon} {category.name}
+                      </span>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

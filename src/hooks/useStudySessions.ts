@@ -24,7 +24,7 @@ export function useStudySessions(weekStart?: Date) {
   const currentWeekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
 
   const { data: sessions = [], isLoading } = useQuery({
-    queryKey: ['studySessions', user?.id, format(currentWeekStart, 'yyyy-MM-dd')],
+    queryKey: ['studySessions', user?.uid, format(currentWeekStart, 'yyyy-MM-dd')],
     queryFn: async () => {
       if (!user) return [];
       
@@ -33,7 +33,7 @@ export function useStudySessions(weekStart?: Date) {
       
       const q = query(
         collection(db, 'study_sessions'),
-        where('user_id', '==', user.id),
+        where('user_id', '==', user.uid),
         where('scheduled_date', '>=', startDateStr),
         where('scheduled_date', '<=', endDateStr),
         orderBy('scheduled_date', 'asc'),
@@ -41,10 +41,14 @@ export function useStudySessions(weekStart?: Date) {
       );
       
       const snapshot = await getDocs(q);
-      const sessions = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as StudySession[];
+      const sessions = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+        };
+      }) as StudySession[];
       
       return sessions;
     },
@@ -63,7 +67,7 @@ export function useStudySessions(weekStart?: Date) {
 
       const docRef = await addDoc(collection(db, 'study_sessions'), {
         ...data,
-        user_id: user.id,
+        user_id: user.uid,
         is_completed: false,
         created_at: new Date(),
       });
@@ -71,7 +75,7 @@ export function useStudySessions(weekStart?: Date) {
       return {
         id: docRef.id,
         ...data,
-        user_id: user.id,
+        user_id: user.uid,
         is_completed: false,
         created_at: new Date().toISOString(),
       };

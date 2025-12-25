@@ -9,7 +9,8 @@ import {
   deleteDoc, 
   doc, 
   Timestamp,
-  DocumentData
+  DocumentData,
+  QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { db } from '@/integrations/firebase/config';
 
@@ -47,8 +48,9 @@ export interface CreateTaskInput {
 const COLLECTION_NAME = 'tasks';
 
 // Helper to convert Firestore document to Task object
-const mapDocToTask = (doc: DocumentData): Task => {
+export const mapDocToTask = (doc: QueryDocumentSnapshot | DocumentData): Task => {
   const data = doc.data();
+  const docId = 'id' in doc ? doc.id : (doc as any).id;
   
   // Helper to convert Timestamp or Date or String to ISO String
   const toIso = (val: any): string | null => {
@@ -59,7 +61,7 @@ const mapDocToTask = (doc: DocumentData): Task => {
   };
 
   return {
-    id: doc.id,
+    id: docId,
     ...data,
     created_at: toIso(data.created_at) || new Date().toISOString(),
     updated_at: toIso(data.updated_at) || new Date().toISOString(),

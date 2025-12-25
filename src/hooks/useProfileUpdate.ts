@@ -116,6 +116,10 @@ export function useProfileUpdate() {
         updatedAt: new Date(),
       });
 
+      // Invalidate queries to refresh profile data
+      queryClient.invalidateQueries({ queryKey: ['profile', user.uid] });
+      queryClient.invalidateQueries({ queryKey: ['user', user.uid] });
+
       return updateData;
     },
     onSuccess: () => {

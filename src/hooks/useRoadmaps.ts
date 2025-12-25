@@ -193,7 +193,8 @@ export function useRoadmaps() {
       queryClient.invalidateQueries({ queryKey: ['activeRoadmap'] });
       toast({ title: 'Roadmap created!' });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Failed to create roadmap:', error);
       toast({ title: 'Failed to create roadmap', variant: 'destructive' });
     },
   });

@@ -47,47 +47,7 @@ export default function FocusPage() {
     }
   }, [sessionType, sessionState, getDuration]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (sessionState === 'running' && timeRemaining > 0) {
-      interval = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            handleSessionComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    return () => clearInterval(interval);
-  }, [sessionState, timeRemaining]);
-
-  const handleStart = async () => {
-    if (sessionState === 'idle') {
-      const session = await createSession.mutateAsync({
-        task_id: selectedTaskId || undefined,
-        duration_minutes: getDuration(sessionType),
-        session_type: sessionType,
-      });
-      setCurrentSessionId(session.id);
-    }
-    setSessionState('running');
-  };
-
-  const handlePause = () => {
-    setSessionState('paused');
-  };
-
-  const handleReset = () => {
-    setSessionState('idle');
-    setTimeRemaining(getDuration(sessionType) * 60);
-    setCurrentSessionId(null);
-  };
-
-  const handleSessionComplete = async () => {
+  const handleSessionComplete = useCallback(async () => {
     if (currentSessionId) {
       await completeSession.mutateAsync(currentSessionId);
     }
@@ -110,6 +70,46 @@ export default function FocusPage() {
     }
 
     setTimeRemaining(getDuration(sessionType === 'focus' ? 'short_break' : 'focus') * 60);
+  }, [currentSessionId, completeSession, sessionType, sessionsCompleted, settings.sessions_before_long_break, getDuration]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (sessionState === 'running' && timeRemaining > 0) {
+      interval = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            handleSessionComplete();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => clearInterval(interval);
+  }, [sessionState, timeRemaining, handleSessionComplete]);
+
+  const handleStart = async () => {
+    if (sessionState === 'idle') {
+      const session = await createSession.mutateAsync({
+        task_id: selectedTaskId || undefined,
+        duration_minutes: getDuration(sessionType),
+        session_type: sessionType,
+      });
+      setCurrentSessionId(session.id);
+    }
+    setSessionState('running');
+  };
+
+  const handlePause = () => {
+    setSessionState('paused');
+  };
+
+  const handleReset = () => {
+    setSessionState('idle');
+    setTimeRemaining(getDuration(sessionType) * 60);
+    setCurrentSessionId(null);
   };
 
   const formatTime = (seconds: number) => {

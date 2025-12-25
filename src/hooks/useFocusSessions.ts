@@ -1,8 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, doc, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, doc, limit } from 'firebase/firestore';
 
 export interface FocusSession {
   id: string;
@@ -18,30 +19,48 @@ export interface FocusSession {
 
 export function useFocusSessions() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const [sessions, setSessions] = useState<FocusSession[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const sessionsQuery = useQuery({
-    queryKey: ['focus_sessions', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const q = query(
-        collection(db, 'focus_sessions'),
-        where('user_id', '==', user.id),
-        orderBy('started_at', 'desc'),
-        limit(100)
-      );
-      
-      const snapshot = await getDocs(q);
-      const sessions = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as FocusSession[];
-      
-      return sessions;
-    },
-    enabled: !!user,
-  });
+  useEffect(() => {
+    if (!user) {
+      setSessions([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const q = query(
+      collection(db, 'focus_sessions'),
+      where('user_id', '==', user.uid),
+      orderBy('started_at', 'desc'),
+      limit(100)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const sessionsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            started_at: data.started_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+            completed_at: data.completed_at?.toDate?.()?.toISOString() || null,
+            created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+          };
+        }) as FocusSession[];
+        setSessions(sessionsData);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching focus sessions:', error);
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
 
   const createSession = useMutation({
     mutationFn: async (input: {
@@ -52,7 +71,7 @@ export function useFocusSessions() {
       if (!user) throw new Error('Not authenticated');
 
       const docRef = await addDoc(collection(db, 'focus_sessions'), {
-        user_id: user.id,
+        user_id: user.uid,
         task_id: input.task_id || null,
         duration_minutes: input.duration_minutes,
         session_type: input.session_type,
@@ -64,7 +83,7 @@ export function useFocusSessions() {
 
       return {
         id: docRef.id,
-        user_id: user.id,
+        user_id: user.uid,
         task_id: input.task_id || null,
         duration_minutes: input.duration_minutes,
         session_type: input.session_type,
@@ -75,7 +94,7 @@ export function useFocusSessions() {
       };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['focus_sessions'] });
+      // Sessions will update automatically via onSnapshot
     },
   });
 
@@ -89,17 +108,17 @@ export function useFocusSessions() {
       return { is_completed: true };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['focus_sessions'] });
+      // Sessions will update automatically via onSnapshot
       toast.success('Focus session completed!');
     },
   });
 
   // Calculate stats
-  const completedSessions = sessionsQuery.data?.filter(s => s.is_completed && s.session_type === 'focus') || [];
+  const completedSessions = sessions.filter(s => s.is_completed && s.session_type === 'focus');
   const totalFocusMinutes = completedSessions.reduce((acc, s) => acc + s.duration_minutes, 0);
   
   // Calculate streak (consecutive days with completed sessions)
-  const calculateStreak = () => {
+  const calculateStreak = useCallback(() => {
     if (completedSessions.length === 0) return 0;
     
     const today = new Date();
@@ -131,11 +150,11 @@ export function useFocusSessions() {
     }
     
     return streak;
-  };
+  }, [completedSessions]);
 
   return {
-    sessions: sessionsQuery.data || [],
-    isLoading: sessionsQuery.isLoading,
+    sessions,
+    isLoading,
     createSession,
     completeSession,
     totalFocusMinutes,

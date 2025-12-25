@@ -109,7 +109,7 @@ export function useUserSettings() {
     if (user && settingsQuery.data === null && !settingsQuery.isLoading && !createSettings.isPending) {
       createSettings.mutate();
     }
-  }, [user, settingsQuery.data, settingsQuery.isLoading]);
+  }, [user, settingsQuery.data, settingsQuery.isLoading, createSettings]);
 
   // Apply theme
   useEffect(() => {

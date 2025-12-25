@@ -1,7 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { taskService, Task, CreateTaskInput } from '@/services/taskService';
+import { taskService, Task, CreateTaskInput, mapDocToTask } from '@/services/taskService';
+import { db } from '@/integrations/firebase/config';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
 // Re-export types for compatibility
 export type { Task, CreateTaskInput };
@@ -9,15 +12,38 @@ export type { Task, CreateTaskInput };
 export function useTasks() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const tasksQuery = useQuery({
-    queryKey: ['tasks', user?.uid], // Changed from user.id to user.uid to match AuthContext user object usually, but let's check. AuthContext user is likely Firebase User which has uid.
-    queryFn: async () => {
-      if (!user) return [];
-      return await taskService.fetchTasks(user.uid);
-    },
-    enabled: !!user,
-  });
+  useEffect(() => {
+    if (!user) {
+      setTasks([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const q = query(
+      collection(db, 'tasks'),
+      where('user_id', '==', user.uid),
+      orderBy('created_at', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const tasksData = snapshot.docs.map(doc => mapDocToTask(doc));
+        setTasks(tasksData);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching tasks:', error);
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
 
   const createTask = useMutation({
     mutationFn: async (input: CreateTaskInput) => {
@@ -25,7 +51,6 @@ export function useTasks() {
       return await taskService.createTask(user.uid, input);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task created!');
     },
     onError: (error) => {
@@ -40,7 +65,7 @@ export function useTasks() {
       return { id, ...updates };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // Tasks will update automatically via onSnapshot
     },
     onError: (error) => {
       toast.error('Failed to update task');
@@ -54,7 +79,7 @@ export function useTasks() {
       return { is_completed };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // Tasks will update automatically via onSnapshot
       if (data.is_completed) {
         toast.success('Task completed! 🎉');
       }
@@ -70,7 +95,7 @@ export function useTasks() {
       await taskService.deleteTask(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // Tasks will update automatically via onSnapshot
       toast.success('Task deleted');
     },
     onError: (error) => {
@@ -80,9 +105,9 @@ export function useTasks() {
   });
 
   return {
-    tasks: tasksQuery.data || [],
-    isLoading: tasksQuery.isLoading,
-    error: tasksQuery.error,
+    tasks,
+    isLoading,
+    error: null,
     createTask,
     updateTask,
     toggleComplete,

@@ -24,46 +24,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      
-      if (currentUser) {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (!userDoc.exists()) {
-          const fullName = currentUser.displayName || 'User';
-          const baseUsername = fullName
-            .toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^a-z0-9_-]/g, '');
-          let username = baseUsername;
-          let counter = 1;
+      try {
+        setUser(currentUser);
+        
+        if (currentUser) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            if (!userDoc.exists()) {
+              const fullName = currentUser.displayName || 'User';
+              const baseUsername = fullName
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^a-z0-9_-]/g, '');
+              let username = baseUsername;
+              let counter = 1;
 
-          const checkUsernameExists = async (testUsername: string) => {
-            const q = query(
-              collection(db, 'users'),
-              where('username', '==', testUsername)
-            );
-            const snapshot = await getDocs(q);
-            return !snapshot.empty;
-          };
+              const checkUsernameExists = async (testUsername: string) => {
+                const q = query(
+                  collection(db, 'users'),
+                  where('username', '==', testUsername)
+                );
+                const snapshot = await getDocs(q);
+                return !snapshot.empty;
+              };
 
-          while (await checkUsernameExists(username)) {
-            username = `${baseUsername}${counter}`;
-            counter++;
+              while (await checkUsernameExists(username)) {
+                username = `${baseUsername}${counter}`;
+                counter++;
+              }
+
+              await setDoc(doc(db, 'users', currentUser.uid), {
+                email: currentUser.email,
+                fullName,
+                nickname: '',
+                username,
+                avatar_url: currentUser.photoURL || null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              });
+            }
+          } catch (error) {
+            console.error('Error checking/creating user document:', error);
+            // Continue even if user document operations fail
           }
-
-          await setDoc(doc(db, 'users', currentUser.uid), {
-            email: currentUser.email,
-            fullName,
-            nickname: '',
-            username,
-            avatar_url: currentUser.photoURL || null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
         }
+      } catch (error) {
+        console.error('Error in auth state change:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => unsubscribe();
