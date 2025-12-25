@@ -2,9 +2,11 @@ import { useTasks } from '@/hooks/useTasks';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle2, Clock, AlertTriangle, Target } from 'lucide-react';
 import { isToday, isPast, parseISO } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 export default function StatsCards() {
   const { tasks } = useTasks();
+  const navigate = useNavigate();
 
   const todaysTasks = tasks.filter(
     (task) => task.due_date && isToday(parseISO(task.due_date))
@@ -25,6 +27,10 @@ export default function StatsCards() {
   const totalTasks = tasks.length;
   const completionRate = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
 
+  const handleCardClick = (filter: 'today' | 'completed' | 'overdue' | 'all') => {
+    navigate(`/tasks?filter=${filter}`);
+  };
+
   const stats = [
     {
       label: 'Today\'s Tasks',
@@ -32,6 +38,7 @@ export default function StatsCards() {
       icon: Clock,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      filter: 'today' as const,
     },
     {
       label: 'Completed Today',
@@ -39,6 +46,7 @@ export default function StatsCards() {
       icon: CheckCircle2,
       color: 'text-success',
       bgColor: 'bg-success/10',
+      filter: 'completed' as const,
     },
     {
       label: 'Overdue',
@@ -46,6 +54,7 @@ export default function StatsCards() {
       icon: AlertTriangle,
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
+      filter: 'overdue' as const,
     },
     {
       label: 'Completion Rate',
@@ -53,13 +62,18 @@ export default function StatsCards() {
       icon: Target,
       color: 'text-warning',
       bgColor: 'bg-warning/10',
+      filter: 'all' as const,
     },
   ];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-up" style={{ animationDelay: '0.1s' }}>
       {stats.map((stat, index) => (
-        <Card key={stat.label} className="border-border/50 shadow-card hover:shadow-card-hover transition-shadow">
+        <Card 
+          key={stat.label} 
+          className="border-border/50 shadow-card hover:shadow-card-hover transition-shadow cursor-pointer"
+          onClick={() => handleCardClick(stat.filter)}
+        >
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center gap-3">
               <div className={`p-2.5 rounded-xl ${stat.bgColor}`}>

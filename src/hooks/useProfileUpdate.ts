@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/integrations/firebase/config';
 import { storage } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { doc, updateDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export interface UserProfile {
@@ -20,29 +20,10 @@ export function useProfileUpdate() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const checkUsernameAvailability = useQuery({
-    queryKey: ['checkUsername'],
-    queryFn: () => Promise.resolve(null),
-    enabled: false,
-  });
-
-  const checkUsername = async (username: string): Promise<boolean> => {
-    if (!username || username.length < 3) return false;
-    
-    const q = query(
-      collection(db, 'users'),
-      where('username', '==', username.toLowerCase())
-    );
-    
-    const snapshot = await getDocs(q);
-    return snapshot.empty;
-  };
-
   const updateProfile = useMutation({
     mutationFn: async (data: {
       fullName?: string;
       nickname?: string;
-      username?: string;
       avatar?: File;
     }) => {
       if (!user) throw new Error('Not authenticated');
@@ -60,65 +41,42 @@ export function useProfileUpdate() {
         }
       }
 
-      let newUsername = data.username;
-
-      // Handle auto-generation if username is empty string (cleared by user)
-      if (data.username === '') {
-        const currentUserRef = doc(db, 'users', user.uid);
-        const currentUserDoc = await getDoc(currentUserRef);
-        const currentData = currentUserDoc.data();
-        const fullNameToUse = data.fullName || currentData?.fullName || 'User';
-
-        const baseUsername = fullNameToUse
-          .toLowerCase()
-          .replace(/\s+/g, '_')
-          .replace(/[^a-z0-9_-]/g, '');
-        
-        let generatedUsername = baseUsername;
-        let counter = 1;
-
-        // Ensure uniqueness for generated username
-        // Note: This might collide if user repeatedly clears username, but we check availability
-        while (!(await checkUsername(generatedUsername))) {
-           generatedUsername = `${baseUsername}${counter}`;
-           counter++;
-        }
-        newUsername = generatedUsername;
+      const updateData: Record<string, any> = {};
+      
+      // Always include fullName if provided
+      if (data.fullName !== undefined) {
+        updateData.fullName = data.fullName;
+      }
+      
+      // Always include nickname if provided (can be empty string)
+      if (data.nickname !== undefined) {
+        updateData.nickname = data.nickname;
+      }
+      
+      // Include avatar_url if a new avatar was uploaded
+      if (avatarUrl !== null) {
+        updateData.avatar_url = avatarUrl;
       }
 
-      if (newUsername) {
-        // Check if username is different from current
-        const currentUserRef = doc(db, 'users', user.uid);
-        const currentUserDoc = await getDoc(currentUserRef);
-        const currentUsername = currentUserDoc.data()?.username;
-
-        if (currentUsername !== newUsername.toLowerCase()) {
-          const isAvailable = await checkUsername(newUsername);
-          if (!isAvailable) {
-            throw new Error('Username is already taken');
-          }
-        }
-      }
-
-      const updateData: Record<string, string | null> = {};
-      if (data.fullName) updateData.fullName = data.fullName;
-      if (data.nickname) updateData.nickname = data.nickname;
-      if (newUsername) updateData.username = newUsername.toLowerCase();
-      if (avatarUrl) updateData.avatar_url = avatarUrl;
-
+      // Only update if we have fields to update (besides updatedAt)
       if (Object.keys(updateData).length === 0) {
+        // If no fields to update but avatar was attempted, throw error
+        if (data.avatar) {
+          throw new Error('Failed to process avatar upload');
+        }
         throw new Error('No data to update');
       }
 
+      // Always update the updatedAt timestamp
+      updateData.updatedAt = new Date();
+
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        ...updateData,
-        updatedAt: new Date(),
-      });
+      await updateDoc(userRef, updateData);
 
       // Invalidate queries to refresh profile data
       queryClient.invalidateQueries({ queryKey: ['profile', user.uid] });
       queryClient.invalidateQueries({ queryKey: ['user', user.uid] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
 
       return updateData;
     },
@@ -128,6 +86,7 @@ export function useProfileUpdate() {
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : 'Failed to update profile';
+      console.error('Profile update error:', error);
       toast.error(message);
     },
   });
@@ -146,6 +105,7 @@ export function useProfileUpdate() {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         avatar_url: null,
+        updatedAt: new Date(),
       });
     },
     onSuccess: () => {
@@ -160,6 +120,5 @@ export function useProfileUpdate() {
   return {
     updateProfile,
     deleteAvatar,
-    checkUsername,
   };
 }

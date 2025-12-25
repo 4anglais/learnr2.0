@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useTasks } from '@/hooks/useTasks';
 import { useCategories } from '@/hooks/useCategories';
@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Search, Filter, CheckCircle2 } from 'lucide-react';
-import { isToday, isFuture, parseISO } from 'date-fns';
+import { isToday, isFuture, isPast, parseISO } from 'date-fns';
+import { useSearchParams } from 'react-router-dom';
 
 type FilterType = 'all' | 'today' | 'upcoming' | 'completed' | 'high-priority';
 type SortType = 'due-date' | 'priority' | 'created';
@@ -23,11 +24,20 @@ type SortType = 'due-date' | 'priority' | 'created';
 export default function Tasks() {
   const { tasks, isLoading } = useTasks();
   const { categories } = useCategories();
+  const [searchParams] = useSearchParams();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('due-date');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  // Handle URL query params
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam === 'today' || filterParam === 'completed' || filterParam === 'overdue' || filterParam === 'all') {
+      setFilter(filterParam === 'overdue' ? 'all' : filterParam as FilterType);
+    }
+  }, [searchParams]);
 
   const filteredTasks = tasks
     .filter((task) => {
@@ -43,6 +53,15 @@ export default function Tasks() {
       // Category filter
       if (categoryFilter !== 'all' && task.category_id !== categoryFilter) {
         return false;
+      }
+
+      // Handle overdue from URL
+      const urlFilter = searchParams.get('filter');
+      if (urlFilter === 'overdue') {
+        return !task.is_completed &&
+          task.due_date &&
+          isPast(parseISO(task.due_date)) &&
+          !isToday(parseISO(task.due_date));
       }
 
       // Status filter

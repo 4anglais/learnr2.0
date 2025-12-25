@@ -54,9 +54,11 @@ export interface Roadmap {
 
 const convertDate = (date: any): string => {
   if (!date) return new Date().toISOString();
-  if (date.toDate) return date.toDate().toISOString();
+  if (date instanceof Timestamp) return date.toDate().toISOString();
+  if (typeof date.toDate === 'function') return date.toDate().toISOString();
   if (date instanceof Date) return date.toISOString();
-  return date;
+  if (typeof date === 'string') return date;
+  return new Date().toISOString();
 };
 
 export function useRoadmaps() {
@@ -171,10 +173,12 @@ export function useRoadmaps() {
 
   const createRoadmap = useMutation({
     mutationFn: async (data: { title: string; description?: string; duration_weeks?: number }) => {
-      const timestamp = new Date();
+      if (!user) throw new Error('User not authenticated');
+      
+      const timestamp = Timestamp.now();
       const newRoadmap = {
         ...data,
-        user_id: user!.uid,
+        user_id: user.uid,
         created_at: timestamp,
         updated_at: timestamp,
         is_completed: false,
@@ -184,8 +188,8 @@ export function useRoadmaps() {
       return {
         id: docRef.id,
         ...newRoadmap,
-        created_at: timestamp.toISOString(),
-        updated_at: timestamp.toISOString(),
+        created_at: timestamp.toDate().toISOString(),
+        updated_at: timestamp.toDate().toISOString(),
       };
     },
     onSuccess: () => {
@@ -201,7 +205,7 @@ export function useRoadmaps() {
 
   const createMilestone = useMutation({
     mutationFn: async (data: { roadmap_id: string; title: string; description?: string; color?: string; position: number }) => {
-      const timestamp = new Date();
+      const timestamp = Timestamp.now();
       const newMilestone = {
         ...data,
         created_at: timestamp,
@@ -211,7 +215,7 @@ export function useRoadmaps() {
       return {
         id: docRef.id,
         ...newMilestone,
-        created_at: timestamp.toISOString(),
+        created_at: timestamp.toDate().toISOString(),
       };
     },
     onSuccess: () => {
@@ -227,7 +231,7 @@ export function useRoadmaps() {
       resource_url?: string;
       position: number;
     }) => {
-      const timestamp = new Date();
+      const timestamp = Timestamp.now();
       const newStep = {
         ...data,
         is_completed: false,
@@ -238,7 +242,7 @@ export function useRoadmaps() {
       return {
         id: docRef.id,
         ...newStep,
-        created_at: timestamp.toISOString(),
+        created_at: timestamp.toDate().toISOString(),
       };
     },
     onSuccess: () => {

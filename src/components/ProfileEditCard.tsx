@@ -11,14 +11,12 @@ import { toast } from 'sonner';
 
 export function ProfileEditCard() {
   const { profile, isLoading } = useProfile();
-  const { updateProfile, deleteAvatar, checkUsername } = useProfileUpdate();
+  const { updateProfile, deleteAvatar } = useProfileUpdate();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     nickname: '',
-    username: '',
   });
-  const [usernameError, setUsernameError] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -33,7 +31,6 @@ export function ProfileEditCard() {
       setFormData({
         fullName: profile.fullName || '',
         nickname: profile.nickname || '',
-        username: profile.username || '',
       });
     }
     setIsEditing(true);
@@ -43,7 +40,6 @@ export function ProfileEditCard() {
     setIsEditing(false);
     setAvatarPreview(null);
     setSelectedFile(null);
-    setUsernameError('');
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,59 +64,26 @@ export function ProfileEditCard() {
     reader.readAsDataURL(file);
   };
 
-  const handleUsernameChange = async (value: string) => {
-    setFormData((prev) => ({ ...prev, username: value }));
-    
-    // If username is empty, it's valid (will be auto-generated)
-    if (value.length === 0) {
-      setUsernameError('');
-      return;
-    }
-
-    if (value.length < 3) {
-      setUsernameError('Username must be at least 3 characters');
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-      setUsernameError('Username can only contain letters, numbers, hyphens, and underscores');
-      return;
-    }
-
-    if (value.toLowerCase() === profile?.username?.toLowerCase()) {
-      setUsernameError('');
-      return;
-    }
-
-    const isAvailable = await checkUsername(value);
-    if (!isAvailable) {
-      setUsernameError('Username is already taken');
-    } else {
-      setUsernameError('');
-    }
-  };
-
   const handleSave = async () => {
     if (!formData.fullName.trim()) {
       toast.error('Full name is required');
       return;
     }
 
-    if (usernameError) {
-      toast.error(usernameError);
-      return;
+    try {
+      await updateProfile.mutateAsync({
+        fullName: formData.fullName.trim(),
+        nickname: formData.nickname.trim() || '',
+        avatar: selectedFile || undefined,
+      });
+
+      setIsEditing(false);
+      setAvatarPreview(null);
+      setSelectedFile(null);
+    } catch (error) {
+      // Error is handled by the mutation's onError callback
+      console.error('Failed to save profile:', error);
     }
-
-    await updateProfile.mutateAsync({
-      fullName: formData.fullName,
-      nickname: formData.nickname,
-      username: formData.username,
-      avatar: selectedFile || undefined,
-    });
-
-    setIsEditing(false);
-    setAvatarPreview(null);
-    setSelectedFile(null);
   };
 
   if (isLoading) {
@@ -162,9 +125,6 @@ export function ProfileEditCard() {
                 <p className="font-semibold text-foreground">{profile?.fullName || 'User'}</p>
                 {profile?.nickname && (
                   <p className="text-sm text-muted-foreground">@{profile.nickname}</p>
-                )}
-                {profile?.username && (
-                  <p className="text-xs text-muted-foreground">username: {profile.username}</p>
                 )}
                 <p className="text-sm text-muted-foreground">{profile?.email}</p>
               </div>
@@ -244,32 +204,12 @@ export function ProfileEditCard() {
                   How others will see you in the app
                 </p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="username">Username (Optional - Auto-generated if empty)</Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => handleUsernameChange(e.target.value)}
-                  placeholder="john_doe"
-                  className={usernameError ? 'border-destructive' : ''}
-                />
-                {usernameError ? (
-                  <p className="text-xs text-destructive">{usernameError}</p>
-                ) : formData.username ? (
-                  <p className="text-xs text-success">Username available ✓</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Leave empty to auto-generate from full name
-                  </p>
-                )}
-              </div>
             </div>
 
             <div className="flex gap-2">
               <Button
                 onClick={handleSave}
-                disabled={updateProfile.isPending || !!usernameError || !formData.fullName.trim()}
+                disabled={updateProfile.isPending || !formData.fullName.trim()}
                 className="flex-1"
               >
                 {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
