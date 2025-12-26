@@ -10,12 +10,17 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 export type { Task, CreateTaskInput };
 
 export function useTasks() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setIsLoading(true);
+      return;
+    }
+
     if (!user) {
       setTasks([]);
       setIsLoading(false);
@@ -43,7 +48,7 @@ export function useTasks() {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, authLoading]);
 
   const createTask = useMutation({
     mutationFn: async (input: CreateTaskInput) => {

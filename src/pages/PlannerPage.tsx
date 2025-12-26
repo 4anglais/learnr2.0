@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import CreateRoadmapModal from '@/components/planner/CreateRoadmapModal';
 import RoadmapTimeline from '@/components/planner/RoadmapTimeline';
 import WeeklyPlanner from '@/components/planner/WeeklyPlanner';
@@ -12,7 +19,7 @@ import PlannerDashboardCards from '@/components/planner/PlannerDashboardCards';
 import { Plus, Map, Calendar, Sparkles, Clock, Trash2 } from 'lucide-react';
 
 export default function PlannerPage() {
-  const { activeRoadmap, roadmaps, isLoading, deleteRoadmap } = useRoadmaps();
+  const { activeRoadmap, roadmaps, setActiveRoadmap, isLoading, deleteRoadmap } = useRoadmaps();
   const [createRoadmapOpen, setCreateRoadmapOpen] = useState(false);
 
   const totalSteps = activeRoadmap?.milestones?.flatMap(m => m.steps || []).length || 0;
@@ -28,10 +35,32 @@ export default function PlannerPage() {
             <h1 className="text-2xl font-bold text-foreground">Study Planner</h1>
             <p className="text-muted-foreground">Plan, track, and complete your learning goals</p>
           </div>
-          <Button onClick={() => setCreateRoadmapOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Roadmap
-          </Button>
+          <div className="flex items-center gap-2">
+            {roadmaps.length > 0 && (
+              <Select 
+                value={activeRoadmap?.id} 
+                onValueChange={(value) => {
+                  const selected = roadmaps.find(r => r.id === value);
+                  if (selected) setActiveRoadmap(selected);
+                }}
+              >
+                <SelectTrigger className="w-[200px] bg-background">
+                  <SelectValue placeholder="Select Roadmap" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roadmaps.map((roadmap) => (
+                    <SelectItem key={roadmap.id} value={roadmap.id}>
+                      {roadmap.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button onClick={() => setCreateRoadmapOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Roadmap
+            </Button>
+          </div>
         </div>
 
         {/* Dashboard Cards */}

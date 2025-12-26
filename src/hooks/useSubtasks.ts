@@ -1,10 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { db } from '@/integrations/firebase/config';
 import { 
   collection, 
   query, 
   where, 
   orderBy, 
+  onSnapshot, 
   getDocs, 
   addDoc, 
   updateDoc, 
@@ -24,21 +26,25 @@ export interface Subtask {
 }
 
 export function useSubtasks(taskId: string | null) {
-  const queryClient = useQueryClient();
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const subtasksQuery = useQuery({
-    queryKey: ['subtasks', taskId],
-    queryFn: async () => {
-      if (!taskId) return [];
-      
-      const q = query(
-        collection(db, 'subtasks'),
-        where('task_id', '==', taskId),
-        orderBy('position', 'asc')
-      );
-      
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => {
+  useEffect(() => {
+    if (!taskId) {
+      setSubtasks([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const q = query(
+      collection(db, 'subtasks'),
+      where('task_id', '==', taskId),
+      orderBy('position', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const subtasksData = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -46,9 +52,15 @@ export function useSubtasks(taskId: string | null) {
           created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString()
         };
       }) as Subtask[];
-    },
-    enabled: !!taskId,
-  });
+      setSubtasks(subtasksData);
+      setIsLoading(false);
+    }, (error) => {
+      console.error('Error fetching subtasks:', error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [taskId]);
 
   const createSubtask = useMutation({
     mutationFn: async ({ task_id, title }: { task_id: string; title: string }) => {
@@ -80,9 +92,6 @@ export function useSubtasks(taskId: string | null) {
         created_at: newSubtask.created_at.toISOString()
       };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
-    },
     onError: () => {
       toast.error('Failed to create subtask');
     },
@@ -94,23 +103,17 @@ export function useSubtasks(taskId: string | null) {
       await updateDoc(docRef, { is_completed });
       return { id, is_completed };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
-    },
   });
 
   const deleteSubtask = useMutation({
     mutationFn: async (id: string) => {
       await deleteDoc(doc(db, 'subtasks', id));
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
-    },
   });
 
   return {
-    subtasks: subtasksQuery.data || [],
-    isLoading: subtasksQuery.isLoading,
+    subtasks,
+    isLoading,
     createSubtask,
     toggleSubtask,
     deleteSubtask,

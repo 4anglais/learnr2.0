@@ -91,7 +91,7 @@ export default function RoadmapTimeline({ roadmapId, milestones }: RoadmapTimeli
                       className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteMilestone.mutate(milestone.id);
+                        deleteMilestone.mutate({ id: milestone.id, roadmap_id: roadmapId });
                       }}
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
@@ -132,7 +132,7 @@ export default function RoadmapTimeline({ roadmapId, milestones }: RoadmapTimeli
                       />
 
                       <button
-                        onClick={() => toggleStepComplete.mutate({ id: step.id, is_completed: !step.is_completed })}
+                        onClick={() => toggleStepComplete.mutate({ id: step.id, roadmap_id: roadmapId, is_completed: !step.is_completed })}
                         className={cn(
                           "w-5 h-5 rounded border-2 flex items-center justify-center transition-colors",
                           step.is_completed
@@ -182,7 +182,7 @@ export default function RoadmapTimeline({ roadmapId, milestones }: RoadmapTimeli
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7"
-                          onClick={() => deleteStep.mutate(step.id)}
+                          onClick={() => deleteStep.mutate({ id: step.id, roadmap_id: roadmapId })}
                         >
                           <Trash2 className="h-3 w-3 text-muted-foreground" />
                         </Button>
@@ -228,6 +228,7 @@ export default function RoadmapTimeline({ roadmapId, milestones }: RoadmapTimeli
         <AddStepModal
           open={!!addStepMilestone}
           onOpenChange={(open) => !open && setAddStepMilestone(null)}
+          roadmapId={roadmapId}
           milestoneId={addStepMilestone}
           position={milestones.find(m => m.id === addStepMilestone)?.steps?.length || 0}
         />

@@ -21,11 +21,12 @@ import { useRoadmaps } from '@/hooks/useRoadmaps';
 interface AddStepModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  roadmapId: string;
   milestoneId: string;
   position: number;
 }
 
-export default function AddStepModal({ open, onOpenChange, milestoneId, position }: AddStepModalProps) {
+export default function AddStepModal({ open, onOpenChange, roadmapId, milestoneId, position }: AddStepModalProps) {
   const { createStep } = useRoadmaps();
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
@@ -36,6 +37,7 @@ export default function AddStepModal({ open, onOpenChange, milestoneId, position
     if (!title.trim()) return;
 
     await createStep.mutateAsync({
+      roadmap_id: roadmapId,
       milestone_id: milestoneId,
       title: title.trim(),
       difficulty,

@@ -22,57 +22,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const initializeUser = async (currentUser: User, fullName?: string) => {
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        const name = fullName || currentUser.displayName || 'User';
+        const baseUsername = name
+          .toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_-]/g, '');
+        let username = baseUsername;
+        let counter = 1;
+
+        const checkUsernameExists = async (testUsername: string) => {
+          const q = query(
+            collection(db, 'users'),
+            where('username', '==', testUsername)
+          );
+          const snapshot = await getDocs(q);
+          return !snapshot.empty;
+        };
+
+        while (await checkUsernameExists(username)) {
+          username = `${baseUsername}${counter}`;
+          counter++;
+        }
+
+        await setDoc(userRef, {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          fullName: name,
+          nickname: '',
+          username,
+          avatar_url: currentUser.photoURL || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }, { merge: true });
+      } else {
+        // If document exists, still ensure basic fields are there
+        await setDoc(userRef, {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          updatedAt: new Date(),
+        }, { merge: true });
+      }
+    } catch (error) {
+      console.error('Error initializing user:', error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      try {
-        setUser(currentUser);
-        
-        if (currentUser) {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-            if (!userDoc.exists()) {
-              const fullName = currentUser.displayName || 'User';
-              const baseUsername = fullName
-                .toLowerCase()
-                .replace(/\s+/g, '_')
-                .replace(/[^a-z0-9_-]/g, '');
-              let username = baseUsername;
-              let counter = 1;
-
-              const checkUsernameExists = async (testUsername: string) => {
-                const q = query(
-                  collection(db, 'users'),
-                  where('username', '==', testUsername)
-                );
-                const snapshot = await getDocs(q);
-                return !snapshot.empty;
-              };
-
-              while (await checkUsernameExists(username)) {
-                username = `${baseUsername}${counter}`;
-                counter++;
-              }
-
-              await setDoc(doc(db, 'users', currentUser.uid), {
-                email: currentUser.email,
-                fullName,
-                nickname: '',
-                username,
-                avatar_url: currentUser.photoURL || null,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              });
-            }
-          } catch (error) {
-            console.error('Error checking/creating user document:', error);
-            // Continue even if user document operations fail
-          }
-        }
-      } catch (error) {
-        console.error('Error in auth state change:', error);
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      if (currentUser) {
+        await initializeUser(currentUser);
       }
+      setUser(currentUser);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -87,36 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         displayName: fullName
       });
 
-      const baseUsername = fullName
-        .toLowerCase()
-        .replace(/\s+/g, '_')
-        .replace(/[^a-z0-9_-]/g, '');
-      let username = baseUsername;
-      let counter = 1;
-
-      const checkUsernameExists = async (testUsername: string) => {
-        const q = query(
-          collection(db, 'users'),
-          where('username', '==', testUsername)
-        );
-        const snapshot = await getDocs(q);
-        return !snapshot.empty;
-      };
-
-      while (await checkUsernameExists(username)) {
-        username = `${baseUsername}${counter}`;
-        counter++;
-      }
-
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email,
-        fullName,
-        nickname: '',
-        username,
-        avatar_url: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      await initializeUser(userCredential.user, fullName);
 
       return { error: null };
     } catch (error) {
@@ -138,40 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-      if (!userDoc.exists()) {
-        const fullName = result.user.displayName || 'User';
-        const baseUsername = fullName
-          .toLowerCase()
-          .replace(/\s+/g, '_')
-          .replace(/[^a-z0-9_-]/g, '');
-        let username = baseUsername;
-        let counter = 1;
-
-        const checkUsernameExists = async (testUsername: string) => {
-          const q = query(
-            collection(db, 'users'),
-            where('username', '==', testUsername)
-          );
-          const snapshot = await getDocs(q);
-          return !snapshot.empty;
-        };
-
-        while (await checkUsernameExists(username)) {
-          username = `${baseUsername}${counter}`;
-          counter++;
-        }
-
-        await setDoc(doc(db, 'users', result.user.uid), {
-          email: result.user.email,
-          fullName,
-          nickname: '',
-          username,
-          avatar_url: result.user.photoURL || null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      }
+      await initializeUser(result.user);
 
       return { error: null };
     } catch (error) {

@@ -3,7 +3,7 @@ import { db } from '@/integrations/firebase/config';
 import { storage } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export interface UserProfile {
@@ -71,7 +71,7 @@ export function useProfileUpdate() {
       updateData.updatedAt = new Date();
 
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, updateData);
+      await setDoc(userRef, updateData, { merge: true });
 
       // Invalidate queries to refresh profile data
       queryClient.invalidateQueries({ queryKey: ['profile', user.uid] });
@@ -103,10 +103,10 @@ export function useProfileUpdate() {
       }
 
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
+      await setDoc(userRef, {
         avatar_url: null,
         updatedAt: new Date(),
-      });
+      }, { merge: true });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });

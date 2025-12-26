@@ -37,6 +37,34 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "roadmaps",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "roadmaps",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "updated_at",
           "order": "DESCENDING"
         }

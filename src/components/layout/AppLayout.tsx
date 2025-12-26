@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,11 +45,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { profile } = useProfile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const initials = profile?.full_name
-    ?.split(' ')
+  const displayName = profile?.nickname || profile?.fullName || 'User';
+  const nameForInitials = profile?.fullName || profile?.nickname || 'User';
+  const initials = nameForInitials
+    .split(' ')
     .map((n) => n[0])
+    .filter(Boolean)
     .join('')
-    .toUpperCase() || 'U';
+    .toUpperCase();
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,6 +91,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
+                    {profile?.avatar_url && (
+                      <AvatarImage src={profile.avatar_url} alt={displayName} />
+                    )}
                     <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
                       {initials}
                     </AvatarFallback>
@@ -96,7 +102,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
+                  <p className="text-sm font-medium">{displayName}</p>
                   <p className="text-xs text-muted-foreground">Student</p>
                 </div>
                 <DropdownMenuSeparator />

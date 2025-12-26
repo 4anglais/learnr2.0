@@ -10,12 +10,12 @@ export default function GreetingCard() {
     return 'Good evening';
   };
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const name = profile?.nickname || profile?.fullName?.split(' ')[0] || 'there';
 
   return (
     <div className="animate-fade-up">
       <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-        {getGreeting()}, {firstName} 👋
+        {getGreeting()}, {name} 👋
       </h1>
       <p className="text-muted-foreground mt-1">
         Here's what you have planned for today

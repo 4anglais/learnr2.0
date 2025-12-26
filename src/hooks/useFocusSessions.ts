@@ -18,11 +18,16 @@ export interface FocusSession {
 }
 
 export function useFocusSessions() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setIsLoading(true);
+      return;
+    }
+
     if (!user) {
       setSessions([]);
       setIsLoading(false);
@@ -60,7 +65,7 @@ export function useFocusSessions() {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, authLoading]);
 
   const createSession = useMutation({
     mutationFn: async (input: {
