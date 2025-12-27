@@ -284,7 +284,7 @@ export default function Settings() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="text-sm text-muted-foreground space-y-2">
-                        <p>LEARNR and its logo are copyright © {new Date().getFullYear()} Angel Phiri. All rights reserved.</p>
+                        <p>LEARNR and its logo are copyright © {new Date().getFullYear()} Learnr. All rights reserved.</p>
                         <ul className="list-disc pl-4 space-y-1">
                           <li>Users cannot copy, distribute, modify, or sell the app or its content without permission.</li>
                           <li>Content created in the app belongs to the user, but LEARNR may use anonymized data to improve services.</li>
