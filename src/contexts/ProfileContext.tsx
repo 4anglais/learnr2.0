@@ -24,12 +24,14 @@ interface ProfileContextType {
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
-const convertDate = (date: any): string => {
+const convertDate = (date: unknown): string => {
   if (!date) return new Date().toISOString();
   if (date instanceof Timestamp) return date.toDate().toISOString();
-  if (typeof date.toDate === 'function') return date.toDate().toISOString();
   if (date instanceof Date) return date.toISOString();
   if (typeof date === 'string') return date;
+  if (typeof date === 'object' && date !== null && 'toDate' in date && typeof (date as any).toDate === 'function') {
+    return (date as any).toDate().toISOString();
+  }
   return new Date().toISOString();
 };
 
@@ -76,7 +78,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, queryClient]);
 
   return (
     <ProfileContext.Provider value={{ profile, isLoading, error }}>

@@ -37,8 +37,6 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-  const [signupName, setSignupName] = useState('');
-  const [signupNickname, setSignupNickname] = useState('');
   
   // Reset password state
   const [resetEmail, setResetEmail] = useState('');
@@ -76,7 +74,7 @@ export default function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupEmail || !signupPassword || !signupConfirmPassword || !signupName || !signupNickname) {
+    if (!signupEmail || !signupPassword || !signupConfirmPassword) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -92,7 +90,7 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName, signupNickname);
+    const { error } = await signUp(signupEmail, signupPassword);
     setIsLoading(false);
 
     if (error) {
@@ -272,28 +270,6 @@ export default function Auth() {
 
               <TabsContent value="signup" className="mt-0">
                 <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="John Doe"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-nickname">Nickname</Label>
-                    <Input
-                      id="signup-nickname"
-                      type="text"
-                      placeholder="Johnny"
-                      value={signupNickname}
-                      onChange={(e) => setSignupNickname(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
                     <Input

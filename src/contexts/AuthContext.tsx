@@ -6,7 +6,7 @@ import { doc, setDoc, getDoc, query, collection, where, getDocs, deleteDoc } fro
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, nickname: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -15,6 +15,7 @@ interface AuthContextType {
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   changeEmail: (currentPassword: string, newEmail: string) => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
+  updateProfileData: (fullName: string, nickname: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,9 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userDoc = await getDoc(userRef);
       
       if (!userDoc.exists()) {
-        const name = fullName || currentUser.displayName || 'User';
-        const userNickname = nickname || '';
-        const baseUsername = name
+        const name = fullName || currentUser.displayName || null;
+        const userNickname = nickname || null;
+        const baseUsername = (name || 'user')
           .toLowerCase()
           .replace(/\s+/g, '_')
           .replace(/[^a-z0-9_-]/g, '');
@@ -88,17 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, nickname: string) => {
+  const signUp = async (email: string, password: string) => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update profile immediately to ensure consistency
-      await updateProfile(userCredential.user, {
-        displayName: fullName
-      });
-
-      await initializeUser(userCredential.user, fullName, nickname);
-
+      await createUserWithEmailAndPassword(auth, email, password);
       return { error: null };
     } catch (error) {
       return { error: error instanceof Error ? error : new Error('Sign up failed') };
@@ -217,11 +210,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // This is often required for sensitive operations like account deletion
         try {
           await reauthenticateWithCredential(currentUser, GoogleAuthProvider.credentialFromResult(await signInWithPopup(auth, provider))!);
-        } catch (reauthError: any) {
+        } catch (reauthError: unknown) {
           // If popup is blocked or fails, we might need the UI to handle it, 
           // but for now we'll try this direct approach.
           console.error('Google reauth failed:', reauthError);
-          if (reauthError.code === 'auth/requires-recent-login') {
+          const error = reauthError as { code?: string; message?: string };
+          if (error.code === 'auth/requires-recent-login') {
              throw new Error('Please sign out and sign back in to delete your account.');
           }
           throw reauthError;
@@ -242,9 +236,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: error instanceof Error ? error : new Error('Failed to delete account') };
     }
   };
+  
+  const updateProfileData = async (fullName: string, nickname: string) => {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('No user logged in');
+      }
+
+      // Update Firebase Auth profile
+      await updateProfile(auth.currentUser, {
+        displayName: fullName
+      });
+
+      // Update Firestore document
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await setDoc(userRef, {
+        fullName,
+        nickname,
+        updatedAt: new Date(),
+      }, { merge: true });
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error updating profile data:', error);
+      return { error: error instanceof Error ? error : new Error('Failed to update profile') };
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, sendVerificationEmail, changePassword, changeEmail, deleteAccount }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, sendVerificationEmail, changePassword, changeEmail, deleteAccount, updateProfileData }}>
       {children}
     </AuthContext.Provider>
   );
