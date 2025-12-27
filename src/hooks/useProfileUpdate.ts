@@ -24,7 +24,7 @@ export function useProfileUpdate() {
     mutationFn: async (data: {
       fullName?: string;
       nickname?: string;
-      avatar?: File;
+      avatar?: File | Blob;
     }) => {
       if (!user) throw new Error('Not authenticated');
 
@@ -32,39 +32,39 @@ export function useProfileUpdate() {
 
       if (data.avatar) {
         try {
-          const storageRef = ref(storage, `avatars/${user.uid}`);
-          await uploadBytes(storageRef, data.avatar);
-          avatarUrl = await getDownloadURL(storageRef);
+          // Use a unique name for each upload to avoid cache issues
+          const fileExtension = data.avatar instanceof File ? data.avatar.name.split('.').pop() : 'jpg';
+          const fileName = `${user.uid}_${Date.now()}.${fileExtension}`;
+          const storageRef = ref(storage, `avatars/${fileName}`);
+          
+          // Set metadata for the upload
+          const metadata = {
+            contentType: data.avatar.type || 'image/jpeg',
+          };
+          
+          const uploadResult = await uploadBytes(storageRef, data.avatar, metadata);
+          avatarUrl = await getDownloadURL(uploadResult.ref);
+          
+          // Optionally delete old avatar here if we had the old URL
         } catch (error) {
           console.error('Image upload failed:', error);
-          throw new Error('Failed to upload image');
+          throw new Error('Failed to upload image. Please try again.');
         }
       }
 
-      const updateData: Record<string, any> = {};
+      const updateData: any = {};
       
-      // Always include fullName if provided
       if (data.fullName !== undefined) {
         updateData.fullName = data.fullName;
       }
       
-      // Always include nickname if provided (can be empty string)
       if (data.nickname !== undefined) {
         updateData.nickname = data.nickname;
       }
       
-      // Include avatar_url if a new avatar was uploaded
       if (avatarUrl !== null) {
+        updateData.profilePic = avatarUrl;
         updateData.avatar_url = avatarUrl;
-      }
-
-      // Only update if we have fields to update (besides updatedAt)
-      if (Object.keys(updateData).length === 0) {
-        // If no fields to update but avatar was attempted, throw error
-        if (data.avatar) {
-          throw new Error('Failed to process avatar upload');
-        }
-        throw new Error('No data to update');
       }
 
       // Always update the updatedAt timestamp
@@ -74,9 +74,8 @@ export function useProfileUpdate() {
       await setDoc(userRef, updateData, { merge: true });
 
       // Invalidate queries to refresh profile data
-      queryClient.invalidateQueries({ queryKey: ['profile', user.uid] });
-      queryClient.invalidateQueries({ queryKey: ['user', user.uid] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      await queryClient.invalidateQueries({ queryKey: ['user', user.uid] });
 
       return updateData;
     },
@@ -105,6 +104,7 @@ export function useProfileUpdate() {
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
         avatar_url: null,
+        profilePic: null,
         updatedAt: new Date(),
       }, { merge: true });
     },

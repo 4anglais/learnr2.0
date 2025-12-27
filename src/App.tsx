@@ -15,6 +15,8 @@ import Settings from "./pages/Settings";
 import FocusPage from "./pages/FocusPage";
 import PlannerPage from "./pages/PlannerPage";
 import CompleteProfile from "./pages/CompleteProfile";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/focus" element={<ProtectedRoute><FocusPage /></ProtectedRoute>} />
               <Route path="/planner" element={<ProtectedRoute><PlannerPage /></ProtectedRoute>} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

@@ -20,9 +20,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Bell, Palette, LogOut, Clock, Sun, Moon, Monitor, ShieldCheck, UserX } from 'lucide-react';
+import { Bell, Palette, LogOut, Clock, Sun, Moon, Monitor, ShieldCheck, UserX, HelpCircle, Mail, FileText, Copyright, ExternalLink } from 'lucide-react';
 import { ProfileEditCard } from '@/components/ProfileEditCard';
 import { AccountSecurityCard } from '@/components/AccountSecurityCard';
+import { Link } from 'react-router-dom';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,7 +73,7 @@ export default function Settings() {
         <ProfileEditCard />
 
         {/* Collapsible Sections */}
-        <Accordion type="multiple" className="space-y-6" defaultValue={['study-preferences', 'account-security', 'notifications', 'appearance']}>
+        <Accordion type="single" collapsible className="space-y-6">
           {/* Account Security Section */}
           <AccountSecurityCard />
 
@@ -224,6 +226,110 @@ export default function Settings() {
               </AccordionContent>
             </Card>
           </AccordionItem>
+          {/* Support & Legal Section */}
+          <AccordionItem value="support-legal" className="border-none">
+            <Card className="border-border/50 shadow-card">
+              <AccordionTrigger className="px-6 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  <div className="text-left">
+                    <CardTitle className="text-base">Support & Legal</CardTitle>
+                    <CardDescription>Policies, terms, and contact information</CardDescription>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <div className="space-y-4 pt-4">
+                  <Accordion type="single" collapsible className="w-full">
+                    {/* Terms of Service */}
+                    <AccordionItem value="tos">
+                      <AccordionTrigger className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Terms of Service
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground space-y-4">
+                        <p>Effective Date: December 27, 2025</p>
+                        <p>Welcome to LEARNR! By using our app, you agree to our terms.</p>
+                        <Link to="/terms" className="inline-flex items-center gap-1 text-primary hover:underline">
+                          View full Terms of Service <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Privacy Policy */}
+                    <AccordionItem value="privacy">
+                      <AccordionTrigger className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4" />
+                          Privacy Policy
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground space-y-4">
+                        <p>Effective Date: December 27, 2025</p>
+                        <p>LEARNR respects your privacy. Here’s how we handle your information.</p>
+                        <Link to="/privacy" className="inline-flex items-center gap-1 text-primary hover:underline">
+                          View full Privacy Policy <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Copyright */}
+                    <AccordionItem value="copyright">
+                      <AccordionTrigger className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <Copyright className="h-4 w-4" />
+                          Copyright & Intellectual Property
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground space-y-2">
+                        <p>LEARNR and its logo are copyright © {new Date().getFullYear()} Angel Phiri. All rights reserved.</p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          <li>Users cannot copy, distribute, modify, or sell the app or its content without permission.</li>
+                          <li>Content created in the app belongs to the user, but LEARNR may use anonymized data to improve services.</li>
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Contact Us */}
+                    <AccordionItem value="contact">
+                      <AccordionTrigger className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          Contact Us
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground space-y-4 pt-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="contact-email">Email</Label>
+                          <Input id="contact-email" value="angelphiri.2021@gmail.com" readOnly className="bg-muted" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="contact-subject">Subject</Label>
+                          <Input id="contact-subject" value="App Support / Feedback" readOnly className="bg-muted" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="contact-message">Message</Label>
+                          <Textarea id="contact-message" placeholder="Type your message here..." className="min-h-[100px]" />
+                        </div>
+                        <Button 
+                          className="w-full gradient-primary text-primary-foreground"
+                          onClick={() => {
+                            const message = (document.getElementById('contact-message') as HTMLTextAreaElement).value;
+                            window.location.href = `mailto:angelphiri.2021@gmail.com?subject=App Support / Feedback&body=${encodeURIComponent(message)}`;
+                          }}
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Send Email
+                        </Button>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+              </AccordionContent>
+            </Card>
+          </AccordionItem>
         </Accordion>
 
         <Separator />
@@ -284,6 +390,16 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Footer info */}
+        <div className="text-center pt-8 pb-4 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Learnr. All rights reserved.
+          </p>
+          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest">
+            Developed by Angel Phiri
+          </p>
+        </div>
       </div>
     </AppLayout>
   );

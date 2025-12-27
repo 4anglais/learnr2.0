@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { ImageCropper } from './ImageCropper';
 
 export function ProfileEditCard() {
   const { profile, isLoading } = useProfile();
@@ -19,6 +20,8 @@ export function ProfileEditCard() {
   });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
 
   const initials = profile?.fullName
     ?.split(' ')
@@ -40,6 +43,8 @@ export function ProfileEditCard() {
     setIsEditing(false);
     setAvatarPreview(null);
     setSelectedFile(null);
+    setCroppedBlob(null);
+    setCropImage(null);
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,12 +61,20 @@ export function ProfileEditCard() {
       return;
     }
 
-    setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
-      setAvatarPreview(e.target?.result as string);
+      setCropImage(e.target?.result as string);
     };
     reader.readAsDataURL(file);
+    
+    // Reset the input value so the same file can be selected again if canceled
+    e.target.value = '';
+  };
+
+  const onCropComplete = (blob: Blob) => {
+    setCroppedBlob(blob);
+    setAvatarPreview(URL.createObjectURL(blob));
+    setCropImage(null);
   };
 
   const handleSave = async () => {
@@ -74,12 +87,13 @@ export function ProfileEditCard() {
       await updateProfile.mutateAsync({
         fullName: formData.fullName.trim(),
         nickname: formData.nickname.trim() || '',
-        avatar: selectedFile || undefined,
+        avatar: croppedBlob || undefined,
       });
 
       setIsEditing(false);
       setAvatarPreview(null);
       setSelectedFile(null);
+      setCroppedBlob(null);
     } catch (error) {
       // Error is handled by the mutation's onError callback
       console.error('Failed to save profile:', error);
@@ -101,7 +115,15 @@ export function ProfileEditCard() {
   }
 
   return (
-    <Card className="border-border/50 shadow-card">
+    <>
+      {cropImage && (
+        <ImageCropper
+          image={cropImage}
+          onCropComplete={onCropComplete}
+          onCancel={() => setCropImage(null)}
+        />
+      )}
+      <Card className="border-border/50 shadow-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <User className="h-5 w-5" />
@@ -150,7 +172,7 @@ export function ProfileEditCard() {
                   <Label htmlFor="avatar-input" className="cursor-pointer">
                     <div className="flex items-center gap-2 px-3 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors">
                       <Upload className="h-4 w-4" />
-                      Upload Photo
+                      {avatarPreview ? 'Change Photo' : 'Upload Photo'}
                     </div>
                   </Label>
                   <input
@@ -159,20 +181,31 @@ export function ProfileEditCard() {
                     accept="image/*"
                     onChange={handleAvatarChange}
                     className="hidden"
+                    disabled={updateProfile.isPending}
                   />
                   {(profile?.avatar_url || avatarPreview) && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        deleteAvatar.mutate();
-                        setAvatarPreview(null);
+                      onClick={async () => {
+                        try {
+                          await deleteAvatar.mutateAsync();
+                          setAvatarPreview(null);
+                        } catch (err) {
+                          console.error("Error deleting avatar:", err);
+                        }
                       }}
-                      disabled={deleteAvatar.isPending}
+                      disabled={deleteAvatar.isPending || updateProfile.isPending}
                     >
-                      <X className="h-4 w-4" />
-                      Remove
+                      {deleteAvatar.isPending ? (
+                        'Removing...'
+                      ) : (
+                        <>
+                          <X className="h-4 w-4" />
+                          Remove
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -187,6 +220,7 @@ export function ProfileEditCard() {
                     setFormData((prev) => ({ ...prev, fullName: e.target.value }))
                   }
                   placeholder="John Doe"
+                  disabled={updateProfile.isPending}
                 />
               </div>
 
@@ -199,6 +233,7 @@ export function ProfileEditCard() {
                     setFormData((prev) => ({ ...prev, nickname: e.target.value }))
                   }
                   placeholder="Your nickname"
+                  disabled={updateProfile.isPending}
                 />
                 <p className="text-xs text-muted-foreground">
                   How others will see you in the app
@@ -222,5 +257,6 @@ export function ProfileEditCard() {
         )}
       </CardContent>
     </Card>
+    </>
   );
 }

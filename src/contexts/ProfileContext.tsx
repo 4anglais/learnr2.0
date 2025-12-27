@@ -12,6 +12,7 @@ export interface Profile {
   nickname: string | null;
   username: string | null;
   avatar_url: string | null;
+  profilePic: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,7 +64,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           fullName: data?.fullName || null,
           nickname: data?.nickname || null,
           username: data?.username || null,
-          avatar_url: data?.avatar_url || null,
+          avatar_url: data?.profilePic || data?.avatar_url || null,
+          profilePic: data?.profilePic || null,
           createdAt: convertDate(data?.createdAt),
           updatedAt: convertDate(data?.updatedAt),
         } as Profile);

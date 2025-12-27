@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -345,7 +345,14 @@ export default function Auth() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          By continuing, you agree to our Terms of Service and Privacy Policy.
+          By continuing, you agree to our{' '}
+          <Link to="/terms" className="underline hover:text-primary transition-colors">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="underline hover:text-primary transition-colors">
+            Privacy Policy
+          </Link>.
         </p>
       </div>
     </div>
