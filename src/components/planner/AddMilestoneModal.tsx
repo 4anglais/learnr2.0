@@ -34,18 +34,22 @@ export default function AddMilestoneModal({ open, onOpenChange, roadmapId, posit
     e.preventDefault();
     if (!title.trim()) return;
 
-    await createMilestone.mutateAsync({
-      roadmap_id: roadmapId,
-      title: title.trim(),
-      description: description.trim() || undefined,
-      color,
-      position,
-    });
+    try {
+      await createMilestone.mutateAsync({
+        roadmap_id: roadmapId,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        color,
+        position,
+      });
 
-    setTitle('');
-    setDescription('');
-    setColor(COLORS[0]);
-    onOpenChange(false);
+      setTitle('');
+      setDescription('');
+      setColor(COLORS[0]);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to add milestone:', error);
+    }
   };
 
   return (

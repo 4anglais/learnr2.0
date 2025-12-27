@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,10 @@ import { Chrome } from 'lucide-react';
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
+
+  const from = location.state?.from?.pathname || "/";
   const { user, signIn, signUp, signInWithGoogle, resetPassword, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,6 +38,7 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [signupName, setSignupName] = useState('');
+  const [signupNickname, setSignupNickname] = useState('');
   
   // Reset password state
   const [resetEmail, setResetEmail] = useState('');
@@ -42,9 +46,9 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, from]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,13 +70,13 @@ export default function Auth() {
     } else {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Welcome back!');
-      navigate('/');
+      navigate(from, { replace: true });
     }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupEmail || !signupPassword || !signupConfirmPassword || !signupName) {
+    if (!signupEmail || !signupPassword || !signupConfirmPassword || !signupName || !signupNickname) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -88,7 +92,7 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    const { error } = await signUp(signupEmail, signupPassword, signupName, signupNickname);
     setIsLoading(false);
 
     if (error) {
@@ -100,7 +104,7 @@ export default function Auth() {
     } else {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Account created successfully!');
-      navigate('/');
+      navigate(from, { replace: true });
     }
   };
 
@@ -114,7 +118,7 @@ export default function Auth() {
     } else {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Welcome!');
-      navigate('/');
+      navigate(from, { replace: true });
     }
   };
 
@@ -276,6 +280,17 @@ export default function Auth() {
                       placeholder="John Doe"
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-nickname">Nickname</Label>
+                    <Input
+                      id="signup-nickname"
+                      type="text"
+                      placeholder="Johnny"
+                      value={signupNickname}
+                      onChange={(e) => setSignupNickname(e.target.value)}
                       disabled={isLoading}
                     />
                   </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Plus, ExternalLink, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,21 @@ interface RoadmapTimelineProps {
 export default function RoadmapTimeline({ roadmapId, milestones }: RoadmapTimelineProps) {
   const { toggleStepComplete, deleteMilestone, deleteStep } = useRoadmaps();
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set(milestones.map(m => m.id)));
+
+  // Expand new milestones automatically when they are added
+  useEffect(() => {
+    setExpandedMilestones(prev => {
+      const newSet = new Set(prev);
+      let changed = false;
+      milestones.forEach(m => {
+        if (!newSet.has(m.id)) {
+          newSet.add(m.id);
+          changed = true;
+        }
+      });
+      return changed ? newSet : prev;
+    });
+  }, [milestones]);
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false);
   const [addStepMilestone, setAddStepMilestone] = useState<string | null>(null);
   const [addToTaskStep, setAddToTaskStep] = useState<Step | null>(null);

@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendEmailVerification, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
+import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendEmailVerification, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail, updateProfile, deleteUser } from 'firebase/auth';
 import { auth, db } from '@/integrations/firebase/config';
-import { doc, setDoc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, query, collection, where, getDocs, deleteDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, nickname: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -14,6 +14,7 @@ interface AuthContextType {
   sendVerificationEmail: () => Promise<{ error: Error | null }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   changeEmail: (currentPassword: string, newEmail: string) => Promise<{ error: Error | null }>;
+  deleteAccount: () => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,13 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const initializeUser = async (currentUser: User, fullName?: string) => {
+  const initializeUser = async (currentUser: User, fullName?: string, nickname?: string) => {
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userRef);
       
       if (!userDoc.exists()) {
         const name = fullName || currentUser.displayName || 'User';
+        const userNickname = nickname || '';
         const baseUsername = name
           .toLowerCase()
           .replace(/\s+/g, '_')
@@ -54,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           uid: currentUser.uid,
           email: currentUser.email,
           fullName: name,
-          nickname: '',
+          nickname: userNickname,
           username,
           avatar_url: currentUser.photoURL || null,
           createdAt: new Date(),
@@ -86,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, nickname: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -95,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         displayName: fullName
       });
 
-      await initializeUser(userCredential.user, fullName);
+      await initializeUser(userCredential.user, fullName, nickname);
 
       return { error: null };
     } catch (error) {
@@ -115,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(auth, provider);
       
       await initializeUser(result.user);
@@ -194,8 +197,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteAccount = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('No user logged in');
+      }
+
+      const uid = currentUser.uid;
+      const isGoogleUser = currentUser.providerData.some(
+        (provider) => provider.providerId === 'google.com'
+      );
+
+      // Re-authenticate if necessary
+      if (isGoogleUser) {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        // For Google users, we try to reauthenticate with a popup
+        // This is often required for sensitive operations like account deletion
+        try {
+          await reauthenticateWithCredential(currentUser, GoogleAuthProvider.credentialFromResult(await signInWithPopup(auth, provider))!);
+        } catch (reauthError: any) {
+          // If popup is blocked or fails, we might need the UI to handle it, 
+          // but for now we'll try this direct approach.
+          console.error('Google reauth failed:', reauthError);
+          if (reauthError.code === 'auth/requires-recent-login') {
+             throw new Error('Please sign out and sign back in to delete your account.');
+          }
+          throw reauthError;
+        }
+      }
+
+      // Delete user data from Firestore first
+      // In a real app, you might want to delete tasks and categories too
+      // or use a Cloud Function to clean up everything
+      await deleteDoc(doc(db, 'users', uid));
+      
+      // Delete user in Firebase Auth
+      await deleteUser(currentUser);
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error during account deletion:', error);
+      return { error: error instanceof Error ? error : new Error('Failed to delete account') };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, sendVerificationEmail, changePassword, changeEmail }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, sendVerificationEmail, changePassword, changeEmail, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

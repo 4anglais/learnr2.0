@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, onSnapshot, Timestamp } from 'firebase/firestore';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface Profile {
   id: string;
@@ -34,6 +35,7 @@ const convertDate = (date: any): string => {
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -42,6 +44,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setProfile(null);
       setIsLoading(false);
+      queryClient.clear();
       return;
     }
 

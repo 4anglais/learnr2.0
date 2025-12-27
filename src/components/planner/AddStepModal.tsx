@@ -36,19 +36,23 @@ export default function AddStepModal({ open, onOpenChange, roadmapId, milestoneI
     e.preventDefault();
     if (!title.trim()) return;
 
-    await createStep.mutateAsync({
-      roadmap_id: roadmapId,
-      milestone_id: milestoneId,
-      title: title.trim(),
-      difficulty,
-      resource_url: resourceUrl.trim() || undefined,
-      position,
-    });
+    try {
+      await createStep.mutateAsync({
+        roadmap_id: roadmapId,
+        milestone_id: milestoneId,
+        title: title.trim(),
+        difficulty,
+        resource_url: resourceUrl.trim() || undefined,
+        position,
+      });
 
-    setTitle('');
-    setDifficulty('beginner');
-    setResourceUrl('');
-    onOpenChange(false);
+      setTitle('');
+      setDifficulty('beginner');
+      setResourceUrl('');
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to add step:', error);
+    }
   };
 
   return (

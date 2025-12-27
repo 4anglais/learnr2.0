@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -8,17 +8,20 @@ import {
   query, 
   where, 
   orderBy, 
-  onSnapshot, 
+  getDocs,
   addDoc, 
   setDoc,
   deleteDoc, 
   doc, 
+  getDoc,
+  documentId,
   Timestamp,
 } from 'firebase/firestore';
 
 export interface Step {
   id: string;
   milestone_id: string;
+  roadmap_id: string;
   title: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   resource_url: string | null;
@@ -37,7 +40,7 @@ export interface Milestone {
   position: number;
   color: string;
   created_at: string;
-  steps?: Step[];
+  steps: Step[];
 }
 
 export interface Roadmap {
@@ -46,11 +49,10 @@ export interface Roadmap {
   title: string;
   description: string | null;
   duration_weeks: number;
+  is_completed: boolean;
   created_at: string;
   updated_at: string;
-  createdAt?: string;
-  updatedAt?: string;
-  milestones?: Milestone[];
+  milestones: Milestone[];
 }
 
 const convertDate = (date: Timestamp | Date | string | { toDate: () => Date } | null | undefined): string => {
@@ -67,155 +69,127 @@ const convertDate = (date: Timestamp | Date | string | { toDate: () => Date } | 
 export function useRoadmaps() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [activeRoadmapId, setActiveRoadmapId] = useState<string | null>(null);
 
-  const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
-  const [activeRoadmap, setActiveRoadmap] = useState<Roadmap | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Query all roadmaps for the user
+  const roadmapsQuery = useQuery({
+    queryKey: ['roadmaps', user?.uid],
+    queryFn: async () => {
+      if (!user) return [];
+      const q = query(
+        collection(db, 'roadmaps'),
+        where('user_id', '==', user.uid)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            created_at: convertDate(data.created_at || data.createdAt),
+            updated_at: convertDate(data.updated_at || data.updatedAt),
+            milestones: [],
+          } as Roadmap;
+        })
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    },
+    enabled: !!user,
+  });
 
-  // Listen to all roadmaps for the user
+  // Set initial active roadmap if none selected
   useEffect(() => {
-    if (!user) {
-      setRoadmaps([]);
-      setIsLoading(false);
-      return;
+    if (roadmapsQuery.data && roadmapsQuery.data.length > 0 && !activeRoadmapId) {
+      setActiveRoadmapId(roadmapsQuery.data[0].id);
     }
+  }, [roadmapsQuery.data, activeRoadmapId]);
 
-    const q = query(
-      collection(db, 'roadmaps'),
-      where('user_id', '==', user.uid),
-      orderBy('created_at', 'desc')
-    );
+  // Query details (milestones and steps) for the active roadmap
+  const activeRoadmapQuery = useQuery({
+    queryKey: ['roadmap', activeRoadmapId],
+    queryFn: async () => {
+      if (!activeRoadmapId) return null;
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const roadmapsData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: convertDate(data.createdAt || data.created_at),
-          updatedAt: convertDate(data.updatedAt || data.updated_at),
-          // Keep these for backward compatibility if needed by other components
-          created_at: convertDate(data.createdAt || data.created_at),
-          updated_at: convertDate(data.updatedAt || data.updated_at),
-        } as Roadmap;
-      });
+      // 1. Fetch the roadmap basic info
+      const roadmapDocRef = doc(db, 'roadmaps', activeRoadmapId);
+      const roadmapSnapshot = await getDoc(roadmapDocRef);
       
-      setRoadmaps(roadmapsData);
-      
-      // If activeRoadmap is not set yet, or a new roadmap was created, set it to the latest one
-      if (roadmapsData.length > 0) {
-        const latest = [...roadmapsData].sort((a, b) => 
-          new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()
-        )[0];
-        
-        setActiveRoadmap(prev => {
-          if (!prev) return latest;
-          const current = roadmapsData.find(r => r.id === prev.id);
-          
-          // Only switch automatically if a NEW roadmap was created (different ID and newer createdAt)
-          const isNewRoadmap = latest.id !== prev.id && 
-            new Date(latest.createdAt || latest.created_at).getTime() > new Date(prev.createdAt || prev.created_at).getTime();
-
-          if (isNewRoadmap) {
-            return latest;
-          }
-          
-          return current ? { ...current, milestones: current.milestones || prev.milestones } : latest;
-        });
+      if (!roadmapSnapshot.exists()) {
+        console.error('Roadmap not found:', activeRoadmapId);
+        return null;
       }
       
-      setIsLoading(false);
-    }, (error) => {
-      console.error('Error listening to roadmaps:', error);
-      setIsLoading(false);
-    });
+      const roadmapData = roadmapSnapshot.data();
+      const baseRoadmap = {
+        id: roadmapSnapshot.id,
+        ...roadmapData,
+        created_at: convertDate(roadmapData.created_at || roadmapData.createdAt),
+        updated_at: convertDate(roadmapData.updated_at || roadmapData.updatedAt),
+      } as Roadmap;
 
-    return () => unsubscribe();
-  }, [user]);
+      // 2. Fetch milestones
+      const milestonesQ = query(
+        collection(db, 'milestones'),
+        where('roadmap_id', '==', activeRoadmapId)
+      );
+      const mSnapshot = await getDocs(milestonesQ);
+      const milestones = mSnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            created_at: convertDate(data.created_at),
+            steps: [],
+          } as Milestone;
+        })
+        .sort((a, b) => (a.position || 0) - (b.position || 0));
 
-  // Listen to the active roadmap's milestones and steps
-  useEffect(() => {
-    if (!user || !activeRoadmap?.id) {
-      return;
-    }
-
-    const currentRoadmapId = activeRoadmap.id;
-
-    // Listen to milestones
-    const milestonesQ = query(
-      collection(db, 'milestones'),
-      where('roadmap_id', '==', currentRoadmapId),
-      orderBy('position', 'asc')
-    );
-
-    let unsubSteps: (() => void)[] = [];
-
-    const unsubscribeMilestones = onSnapshot(milestonesQ, (mSnapshot) => {
-      // Clean up previous step listeners
-      unsubSteps.forEach(unsub => unsub());
-      unsubSteps = [];
-
-      const milestonesData = mSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          created_at: convertDate(data.created_at),
-        } as Milestone;
-      });
-
-      if (milestonesData.length === 0) {
-        setActiveRoadmap(prev => prev?.id === currentRoadmapId ? { ...prev, milestones: [] } : prev);
-        return;
+      if (milestones.length === 0) {
+        return { ...baseRoadmap, milestones: [] };
       }
 
-      const milestoneIds = milestonesData.map(m => m.id);
+      // 3. Fetch steps (handling chunking for 'in' query)
+      const milestoneIds = milestones.map(m => m.id);
       const chunks: string[][] = [];
       for (let i = 0; i < milestoneIds.length; i += 10) {
         chunks.push(milestoneIds.slice(i, i + 10));
       }
 
-      const allSteps: Map<string, Step[]> = new Map();
-
-      chunks.forEach((chunk, index) => {
+      const allSteps: Step[] = [];
+      await Promise.all(chunks.map(async (chunk) => {
         const stepsQ = query(
           collection(db, 'steps'),
-          where('milestone_id', 'in', chunk),
-          orderBy('position', 'asc')
+          where('milestone_id', 'in', chunk)
         );
-
-        const unsub = onSnapshot(stepsQ, (sSnapshot) => {
-          const steps = sSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              created_at: convertDate(data.created_at),
-              completed_at: data.completed_at ? convertDate(data.completed_at) : null,
-            } as Step;
-          });
-
-          allSteps.set(`chunk-${index}`, steps);
-
-          const flattenedSteps = Array.from(allSteps.values()).flat();
-          const milestonesWithSteps = milestonesData.map(m => ({
-            ...m,
-            steps: flattenedSteps.filter(s => s.milestone_id === m.id).sort((a, b) => a.position - b.position),
-          }));
-
-          setActiveRoadmap(prev => prev?.id === currentRoadmapId ? { ...prev, milestones: milestonesWithSteps } : prev);
+        const sSnapshot = await getDocs(stepsQ);
+        sSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          allSteps.push({
+            id: doc.id,
+            ...data,
+            created_at: convertDate(data.created_at),
+            completed_at: data.completed_at ? convertDate(data.completed_at) : null,
+          } as Step);
         });
-        unsubSteps.push(unsub);
-      });
-    }, (error) => {
-      console.error('Error listening to milestones:', error);
-    });
+      }));
 
-    return () => {
-      unsubscribeMilestones();
-      unsubSteps.forEach(unsub => unsub());
-    };
-  }, [user, activeRoadmap?.id]);
+      // 4. Merge data
+      const milestonesWithSteps = milestones.map(m => ({
+        ...m,
+        steps: allSteps
+          .filter(s => s.milestone_id === m.id)
+          .sort((a, b) => (a.position || 0) - (b.position || 0)),
+      }));
+
+      return {
+        ...baseRoadmap,
+        milestones: milestonesWithSteps,
+      };
+    },
+    enabled: !!activeRoadmapId,
+  });
 
   const createRoadmap = useMutation({
     mutationFn: async (data: { title: string; description?: string; duration_weeks?: number }) => {
@@ -225,28 +199,22 @@ export function useRoadmaps() {
       const newRoadmap = {
         ...data,
         user_id: user.uid,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        // Also keep snake_case for compatibility if needed
         created_at: timestamp,
         updated_at: timestamp,
         is_completed: false,
       };
       
       const docRef = await addDoc(collection(db, 'roadmaps'), newRoadmap);
-      return {
-        id: docRef.id,
-        ...newRoadmap,
-        createdAt: timestamp.toDate().toISOString(),
-        updatedAt: timestamp.toDate().toISOString(),
-      };
+      return docRef.id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: ['roadmaps', user?.uid] });
+      setActiveRoadmapId(id);
       toast({ title: 'Roadmap created!' });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Failed to create roadmap:', error);
-      toast({ title: 'Failed to create roadmap', variant: 'destructive' });
+      toast({ title: 'Failed to create roadmap', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -254,19 +222,16 @@ export function useRoadmaps() {
     mutationFn: async ({ id, ...updates }: Partial<Roadmap> & { id: string }) => {
       const timestamp = Timestamp.now();
       const docRef = doc(db, 'roadmaps', id);
-      
-      // Destructure to remove milestones from updates (id is already extracted)
       const { milestones: __, ...cleanUpdates } = updates;
       
-      const updateData = {
+      await setDoc(docRef, {
         ...cleanUpdates,
-        updatedAt: timestamp,
         updated_at: timestamp,
-      };
-      
-      await setDoc(docRef, updateData, { merge: true });
+      }, { merge: true });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['roadmaps', user?.uid] });
+      queryClient.invalidateQueries({ queryKey: ['roadmap', variables.id] });
       toast({ title: 'Roadmap updated' });
     },
   });
@@ -275,24 +240,29 @@ export function useRoadmaps() {
     mutationFn: async (data: { roadmap_id: string; title: string; description?: string; color?: string; position: number }) => {
       const timestamp = Timestamp.now();
       const newMilestone = {
-        ...data,
-        createdAt: timestamp,
+        roadmap_id: data.roadmap_id,
+        title: data.title,
+        description: data.description || null,
+        color: data.color || '#6b7280',
+        position: data.position,
         created_at: timestamp,
       };
       
       const docRef = await addDoc(collection(db, 'milestones'), newMilestone);
       
-      // Update roadmap updatedAt
       await setDoc(doc(db, 'roadmaps', data.roadmap_id), {
-        updatedAt: timestamp,
         updated_at: timestamp,
       }, { merge: true });
 
-      return {
-        id: docRef.id,
-        ...newMilestone,
-        createdAt: timestamp.toDate().toISOString(),
-      };
+      return data.roadmap_id;
+    },
+    onSuccess: (roadmapId) => {
+      queryClient.invalidateQueries({ queryKey: ['roadmap', roadmapId] });
+      toast({ title: 'Milestone added!' });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create milestone:', error);
+      toast({ title: 'Failed to create milestone', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -308,35 +278,35 @@ export function useRoadmaps() {
       const timestamp = Timestamp.now();
       const newStep = {
         milestone_id: data.milestone_id,
+        roadmap_id: data.roadmap_id,
         title: data.title,
-        difficulty: data.difficulty,
-        resource_url: data.resource_url,
+        difficulty: data.difficulty || 'beginner',
+        resource_url: data.resource_url || null,
         position: data.position,
         is_completed: false,
-        createdAt: timestamp,
         created_at: timestamp,
       };
       
-      const docRef = await addDoc(collection(db, 'steps'), newStep);
+      await addDoc(collection(db, 'steps'), newStep);
       
-      // Update roadmap updatedAt
-      if (data.roadmap_id) {
-        await setDoc(doc(db, 'roadmaps', data.roadmap_id), {
-          updatedAt: timestamp,
-          updated_at: timestamp,
-        }, { merge: true });
-      }
+      await setDoc(doc(db, 'roadmaps', data.roadmap_id), {
+        updated_at: timestamp,
+      }, { merge: true });
 
-      return {
-        id: docRef.id,
-        ...newStep,
-        createdAt: timestamp.toDate().toISOString(),
-      };
+      return data.roadmap_id;
+    },
+    onSuccess: (roadmapId) => {
+      queryClient.invalidateQueries({ queryKey: ['roadmap', roadmapId] });
+      toast({ title: 'Step added!' });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create step:', error);
+      toast({ title: 'Failed to create step', description: error.message, variant: 'destructive' });
     },
   });
 
   const toggleStepComplete = useMutation({
-    mutationFn: async ({ id, roadmap_id, is_completed }: { id: string; roadmap_id?: string; is_completed: boolean }) => {
+    mutationFn: async ({ id, roadmap_id, is_completed }: { id: string; roadmap_id: string; is_completed: boolean }) => {
       const timestamp = Timestamp.now();
       const docRef = doc(db, 'steps', id);
       await setDoc(docRef, { 
@@ -344,13 +314,14 @@ export function useRoadmaps() {
         completed_at: is_completed ? timestamp : null 
       }, { merge: true });
 
-      // Update roadmap updatedAt
-      if (roadmap_id) {
-        await setDoc(doc(db, 'roadmaps', roadmap_id), {
-          updatedAt: timestamp,
-          updated_at: timestamp,
-        }, { merge: true });
-      }
+      await setDoc(doc(db, 'roadmaps', roadmap_id), {
+        updated_at: timestamp,
+      }, { merge: true });
+
+      return roadmap_id;
+    },
+    onSuccess: (roadmapId) => {
+      queryClient.invalidateQueries({ queryKey: ['roadmap', roadmapId] });
     },
   });
 
@@ -359,44 +330,51 @@ export function useRoadmaps() {
       await deleteDoc(doc(db, 'roadmaps', id));
     },
     onSuccess: (_, id) => {
-      if (activeRoadmap?.id === id) {
-        setActiveRoadmap(null);
+      queryClient.invalidateQueries({ queryKey: ['roadmaps', user?.uid] });
+      if (activeRoadmapId === id) {
+        setActiveRoadmapId(null);
       }
       toast({ title: 'Roadmap deleted' });
     },
   });
 
   const deleteMilestone = useMutation({
-    mutationFn: async ({ id, roadmap_id }: { id: string; roadmap_id?: string }) => {
+    mutationFn: async ({ id, roadmap_id }: { id: string; roadmap_id: string }) => {
       await deleteDoc(doc(db, 'milestones', id));
-      if (roadmap_id) {
-        const timestamp = Timestamp.now();
-        await setDoc(doc(db, 'roadmaps', roadmap_id), {
-          updatedAt: timestamp,
-          updated_at: timestamp,
-        }, { merge: true });
-      }
+      const timestamp = Timestamp.now();
+      await setDoc(doc(db, 'roadmaps', roadmap_id), {
+        updated_at: timestamp,
+      }, { merge: true });
+      return roadmap_id;
+    },
+    onSuccess: (roadmapId) => {
+      queryClient.invalidateQueries({ queryKey: ['roadmap', roadmapId] });
+      toast({ title: 'Milestone deleted' });
     },
   });
 
   const deleteStep = useMutation({
-    mutationFn: async ({ id, roadmap_id }: { id: string; roadmap_id?: string }) => {
+    mutationFn: async ({ id, roadmap_id }: { id: string; roadmap_id: string }) => {
       await deleteDoc(doc(db, 'steps', id));
-      if (roadmap_id) {
-        const timestamp = Timestamp.now();
-        await setDoc(doc(db, 'roadmaps', roadmap_id), {
-          updatedAt: timestamp,
-          updated_at: timestamp,
-        }, { merge: true });
-      }
+      const timestamp = Timestamp.now();
+      await setDoc(doc(db, 'roadmaps', roadmap_id), {
+        updated_at: timestamp,
+      }, { merge: true });
+      return roadmap_id;
+    },
+    onSuccess: (roadmapId) => {
+      queryClient.invalidateQueries({ queryKey: ['roadmap', roadmapId] });
+      toast({ title: 'Step deleted' });
     },
   });
 
   return {
-    roadmaps,
-    activeRoadmap,
-    setActiveRoadmap,
-    isLoading,
+    roadmaps: roadmapsQuery.data || [],
+    activeRoadmap: activeRoadmapQuery.data || null,
+    activeRoadmapId,
+    setActiveRoadmap: (roadmap: Roadmap) => setActiveRoadmapId(roadmap.id),
+    isLoading: roadmapsQuery.isLoading || activeRoadmapQuery.isLoading,
+    isError: roadmapsQuery.isError || activeRoadmapQuery.isError,
     createRoadmap,
     updateRoadmap,
     createMilestone,

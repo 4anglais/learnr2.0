@@ -19,7 +19,7 @@ import PlannerDashboardCards from '@/components/planner/PlannerDashboardCards';
 import { Plus, Map, Calendar, Sparkles, Clock, Trash2 } from 'lucide-react';
 
 export default function PlannerPage() {
-  const { activeRoadmap, roadmaps, setActiveRoadmap, isLoading, deleteRoadmap } = useRoadmaps();
+  const { activeRoadmap, activeRoadmapId, roadmaps, setActiveRoadmap, isLoading, isError, deleteRoadmap } = useRoadmaps();
   const [createRoadmapOpen, setCreateRoadmapOpen] = useState(false);
 
   const totalSteps = activeRoadmap?.milestones?.flatMap(m => m.steps || []).length || 0;
@@ -38,7 +38,7 @@ export default function PlannerPage() {
           <div className="flex items-center gap-2">
             {roadmaps.length > 0 && (
               <Select 
-                value={activeRoadmap?.id} 
+                value={activeRoadmapId || undefined} 
                 onValueChange={(value) => {
                   const selected = roadmaps.find(r => r.id === value);
                   if (selected) setActiveRoadmap(selected);
@@ -80,7 +80,31 @@ export default function PlannerPage() {
           </TabsList>
 
           <TabsContent value="roadmap" className="space-y-4">
-            {!activeRoadmap ? (
+            {isLoading ? (
+              <Card className="border-border/50 shadow-card">
+                <CardContent className="py-16 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                    <p className="text-muted-foreground">Loading roadmap details...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : isError ? (
+              <Card className="border-border/50 shadow-card">
+                <CardContent className="py-16 text-center">
+                  <div className="w-16 h-16 rounded-full bg-destructive/10 mx-auto mb-4 flex items-center justify-center">
+                    <Map className="h-8 w-8 text-destructive" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Error loading roadmap</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    There was a problem fetching the roadmap details. This might be due to missing database indexes or network issues.
+                  </p>
+                  <Button onClick={() => window.location.reload()}>
+                    Retry
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : !activeRoadmap ? (
               <Card className="border-border/50 shadow-card">
                 <CardContent className="py-16 text-center">
                   <div className="w-16 h-16 rounded-full bg-accent mx-auto mb-4 flex items-center justify-center">
