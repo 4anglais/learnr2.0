@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/profile/UserAvatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,15 +89,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                  <Avatar className="h-9 w-9">
-                    {profile?.avatar_url && (
-                      <AvatarImage src={profile.avatar_url} alt={displayName} />
-                    )}
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                  <UserAvatar 
+                    avatarUrl={profile?.avatar_url} 
+                    displayName={profile?.nickname || profile?.fullName} 
+                    className="h-9 w-9" 
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">

@@ -6,7 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const AVATAR_OPTIONS = [
+  'fas fa-user',
+  'fas fa-user-graduate',
+  'fas fa-user-tie',
+  'fas fa-user-astronaut',
+  'fas fa-user-ninja',
+];
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
@@ -14,6 +23,7 @@ export default function CompleteProfile() {
   const [isLoading, setIsLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [nickname, setNickname] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(AVATAR_OPTIONS[0]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +33,7 @@ export default function CompleteProfile() {
     }
 
     setIsLoading(true);
-    const { error } = await updateProfileData(fullName, nickname);
+    const { error } = await updateProfileData(fullName, nickname, selectedAvatar || undefined);
     setIsLoading(false);
 
     if (error) {
@@ -50,30 +60,58 @@ export default function CompleteProfile() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="full-name">Full Name</Label>
-                <Input
-                  id="full-name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  disabled={isLoading}
-                  required
-                />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-3">
+                <Label>Choose Your Avatar</Label>
+                <div className="flex flex-wrap justify-center gap-4 py-2">
+                  {AVATAR_OPTIONS.map((iconClass) => (
+                    <button
+                      key={iconClass}
+                      type="button"
+                      onClick={() => setSelectedAvatar(iconClass)}
+                      className={cn(
+                        "relative h-14 w-14 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110",
+                        selectedAvatar === iconClass 
+                          ? "border-primary bg-primary text-primary-foreground scale-110" 
+                          : "border-border bg-muted text-muted-foreground"
+                      )}
+                    >
+                      <i className={cn(iconClass, "text-xl")} />
+                      {selectedAvatar === iconClass && (
+                        <div className="absolute -top-1 -right-1 bg-background text-primary rounded-full border border-primary p-0.5">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="nickname">Nickname</Label>
-                <Input
-                  id="nickname"
-                  type="text"
-                  placeholder="Johnny"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  disabled={isLoading}
-                  required
-                />
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full-name">Full Name</Label>
+                  <Input
+                    id="full-name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nickname">Nickname</Label>
+                  <Input
+                    id="nickname"
+                    type="text"
+                    placeholder="Johnny"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
               </div>
               <Button
                 type="submit"
