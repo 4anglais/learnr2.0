@@ -10,11 +10,16 @@ import { UserAvatar } from './profile/UserAvatar';
 import { cn } from '@/lib/utils';
 
 const AVATAR_OPTIONS = [
-  'fas fa-user',
-  'fas fa-user-graduate',
-  'fas fa-user-tie',
-  'fas fa-user-astronaut',
-  'fas fa-user-ninja',
+  'fas fa-user|bg-blue-500',
+  'fas fa-user-graduate|bg-green-500',
+  'fas fa-user-tie|bg-indigo-500',
+  'fas fa-user-astronaut|bg-purple-500',
+  'fas fa-user-ninja|bg-rose-500',
+  'fas fa-user-secret|bg-slate-500',
+  'fas fa-user-md|bg-emerald-500',
+  'fas fa-user-nurse|bg-sky-500',
+  'fas fa-user-robot|bg-violet-500',
+  'fas fa-user-edit|bg-amber-500',
 ];
 
 export function ProfileEditCard() {
@@ -118,38 +123,43 @@ export function ProfileEditCard() {
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label>Choose Avatar</Label>
-                <div className="flex flex-wrap gap-3">
-                  {AVATAR_OPTIONS.map((iconClass) => (
-                    <button
-                      key={iconClass}
-                      type="button"
-                      onClick={() => setSelectedAvatar(iconClass)}
-                      className={cn(
-                        "relative h-12 w-12 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110",
-                        selectedAvatar === iconClass 
-                          ? "border-primary bg-primary text-primary-foreground scale-110" 
-                          : "border-border bg-muted text-muted-foreground"
-                      )}
-                    >
-                      <i className={cn(iconClass, "text-lg")} />
-                      {selectedAvatar === iconClass && (
-                        <div className="absolute -top-1 -right-1 bg-background text-primary rounded-full border border-primary p-0.5">
-                          <Check className="h-2 w-2" />
+                <div className="grid grid-cols-5 md:grid-cols-6 gap-3">
+                  {AVATAR_OPTIONS.map((avatarValue) => {
+                    const [iconClass, bgColor] = avatarValue.split('|');
+                    return (
+                      <button
+                        key={avatarValue}
+                        type="button"
+                        onClick={() => setSelectedAvatar(avatarValue)}
+                        className={cn(
+                          "relative h-11 w-11 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110",
+                          selectedAvatar === avatarValue 
+                            ? "border-primary scale-110 shadow-md" 
+                            : "border-transparent opacity-70 hover:opacity-100"
+                        )}
+                      >
+                        <div className={cn("w-full h-full rounded-full flex items-center justify-center text-white", bgColor)}>
+                          <i className={cn(iconClass, "text-base")} />
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        {selectedAvatar === avatarValue && (
+                          <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5 border-2 border-background">
+                            <Check className="h-2.5 w-2.5" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                   <button
                     type="button"
                     onClick={() => setSelectedAvatar(null)}
                     className={cn(
-                      "relative h-12 w-12 rounded-full border-2 border-dashed flex items-center justify-center transition-all hover:scale-110",
+                      "relative h-11 w-11 rounded-full border-2 border-dashed flex items-center justify-center transition-all hover:scale-110",
                       selectedAvatar === null 
                         ? "border-primary bg-primary/10 text-primary scale-110" 
                         : "border-border text-muted-foreground"
                     )}
                   >
-                    <span className="text-[10px] font-bold">NONE</span>
+                    <span className="text-[9px] font-bold">NONE</span>
                   </button>
                 </div>
               </div>

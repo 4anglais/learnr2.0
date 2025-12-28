@@ -6,6 +6,8 @@ import { useUserSettings } from '@/hooks/useUserSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -254,6 +256,51 @@ export default function FocusPage() {
                   <RotateCcw className="h-5 w-5" />
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Timer Settings */}
+        <Card className="border-border/50 shadow-card">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Timer Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Focus (min)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={settings.focus_duration_minutes}
+                onChange={(e) => updateSettings.mutate({ focus_duration_minutes: parseInt(e.target.value) || 25 })}
+                disabled={sessionState !== 'idle'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Short Break (min)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={settings.short_break_minutes}
+                onChange={(e) => updateSettings.mutate({ short_break_minutes: parseInt(e.target.value) || 5 })}
+                disabled={sessionState !== 'idle'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Long Break (min)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={settings.long_break_minutes}
+                onChange={(e) => updateSettings.mutate({ long_break_minutes: parseInt(e.target.value) || 15 })}
+                disabled={sessionState !== 'idle'}
+              />
             </div>
           </CardContent>
         </Card>

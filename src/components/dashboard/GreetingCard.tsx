@@ -15,10 +15,10 @@ export default function GreetingCard() {
   return (
     <div className="animate-fade-up">
       <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-        {getGreeting()}, {name} 👋
+        {getGreeting()}, {name} 
       </h1>
       <p className="text-muted-foreground mt-1">
-        Here's what you have planned for today
+        Here are plans for today!
       </p>
     </div>
   );

@@ -8,7 +8,8 @@ interface UserAvatarProps {
 }
 
 export function UserAvatar({ avatarUrl, displayName, className }: UserAvatarProps) {
-  const isIcon = avatarUrl?.startsWith('fas ') || avatarUrl?.startsWith('fab ') || avatarUrl?.startsWith('far ');
+  const [iconClass, bgColor] = (avatarUrl || '').split('|');
+  const isIcon = iconClass.startsWith('fas ') || iconClass.startsWith('fab ') || iconClass.startsWith('far ');
   
   const initials = displayName
     ?.split(' ')
@@ -20,9 +21,9 @@ export function UserAvatar({ avatarUrl, displayName, className }: UserAvatarProp
   return (
     <Avatar className={cn(className)}>
       {avatarUrl && !isIcon && <AvatarImage src={avatarUrl} alt={displayName || 'User'} />}
-      <AvatarFallback className={cn("bg-primary text-primary-foreground font-medium")}>
+      <AvatarFallback className={cn(bgColor || "bg-primary", "text-white font-medium")}>
         {isIcon ? (
-          <i className={cn(avatarUrl, "text-[1.2em]")} />
+          <i className={cn(iconClass, "text-[1.2em]")} />
         ) : (
           initials
         )}

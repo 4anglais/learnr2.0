@@ -112,7 +112,7 @@ export function OnboardingTutorial({ open, onOpenChange, onComplete, forceShow =
                       <h2 className="text-xl md:text-3xl font-black tracking-tight text-foreground leading-tight">{slide.title}</h2>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 text-left w-full pb-4">
-                        <div className="bg-muted/50 p-4 md:p-6 rounded-2xl border border-border/50 flex flex-col">
+                        <div className="bg-muted p-4 md:p-6 rounded-2xl border border-border/50 flex flex-col">
                           <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-1 md:mb-2">How to Use</h4>
                           <p className="text-xs md:text-base leading-relaxed text-foreground/80">{slide.howTo}</p>
                         </div>
