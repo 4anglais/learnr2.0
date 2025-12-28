@@ -21,7 +21,7 @@ export interface UserProfile {
 export interface UpdateProfileInput {
   fullName?: string;
   nickname?: string;
-  avatar?: File | Blob;
+  avatar?: File | Blob | string;
 }
 
 // Type for Firestore update data
@@ -40,7 +40,7 @@ export function useProfileUpdate() {
 
       let avatarUrl: string | null = null;
 
-      if (data.avatar) {
+      if (data.avatar instanceof File || data.avatar instanceof Blob) {
         try {
           const fileExtension =
             data.avatar instanceof File ? data.avatar.name.split('.').pop() : 'jpg';
@@ -53,12 +53,12 @@ export function useProfileUpdate() {
 
           const uploadResult = await uploadBytes(storageRef, data.avatar, metadata);
           avatarUrl = await getDownloadURL(uploadResult.ref);
-
-          // Optionally delete old avatar here if you have the old URL
         } catch (error) {
           console.error('Image upload failed:', error);
           throw new Error('Failed to upload image. Please try again.');
         }
+      } else if (typeof data.avatar === 'string') {
+        avatarUrl = data.avatar;
       }
 
       // Build update data

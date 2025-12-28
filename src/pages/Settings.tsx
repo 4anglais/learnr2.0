@@ -1,6 +1,7 @@
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -20,11 +21,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Bell, Palette, LogOut, Clock, Sun, Moon, Monitor, ShieldCheck, UserX, HelpCircle, Mail, FileText, Copyright, ExternalLink } from 'lucide-react';
+import { Bell, Palette, LogOut, Clock, Sun, Moon, Monitor, ShieldCheck, UserX, HelpCircle, FileText, Copyright, ExternalLink } from 'lucide-react';
 import { ProfileEditCard } from '@/components/ProfileEditCard';
 import { AccountSecurityCard } from '@/components/AccountSecurityCard';
 import { Link } from 'react-router-dom';
-import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,8 +40,9 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 
 export default function Settings() {
-  const { signOut, deleteAccount } = useAuth();
+  const { signOut, deleteAccount, user } = useAuth();
   const { settings, updateSettings } = useUserSettings();
+  const { showTutorial } = useOnboarding();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteAccount = async () => {
@@ -234,13 +235,27 @@ export default function Settings() {
                   <HelpCircle className="h-5 w-5" />
                   <div className="text-left">
                     <CardTitle className="text-base">Support & Legal</CardTitle>
-                    <CardDescription>Policies, terms, and contact information</CardDescription>
+                    <CardDescription>Policies and terms of service</CardDescription>
                   </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6">
                 <div className="space-y-4 pt-4">
                   <Accordion type="single" collapsible className="w-full">
+                    {/* Help / How to Use App */}
+                    <div className="border-b">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start px-0 py-4 h-auto font-medium hover:bg-transparent"
+                        onClick={showTutorial}
+                      >
+                        <div className="flex items-center gap-2">
+                          <HelpCircle className="h-4 w-4" />
+                          Help / How to Use App
+                        </div>
+                      </Button>
+                    </div>
+
                     {/* Terms of Service */}
                     <AccordionItem value="tos">
                       <AccordionTrigger className="text-sm">
@@ -289,40 +304,6 @@ export default function Settings() {
                           <li>Users cannot copy, distribute, modify, or sell the app or its content without permission.</li>
                           <li>Content created in the app belongs to the user, but LEARNR may use anonymized data to improve services.</li>
                         </ul>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* Contact Us */}
-                    <AccordionItem value="contact">
-                      <AccordionTrigger className="text-sm">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          Contact Us
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="text-sm text-muted-foreground space-y-4 pt-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="contact-email">Email</Label>
-                          <Input id="contact-email" value="angelphiri.2021@gmail.com" readOnly className="bg-muted" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="contact-subject">Subject</Label>
-                          <Input id="contact-subject" value="App Support / Feedback" readOnly className="bg-muted" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="contact-message">Message</Label>
-                          <Textarea id="contact-message" placeholder="Type your message here..." className="min-h-[100px]" />
-                        </div>
-                        <Button 
-                          className="w-full gradient-primary text-primary-foreground"
-                          onClick={() => {
-                            const message = (document.getElementById('contact-message') as HTMLTextAreaElement).value;
-                            window.location.href = `mailto:angelphiri.2021@gmail.com?subject=App Support / Feedback&body=${encodeURIComponent(message)}`;
-                          }}
-                        >
-                          <Mail className="h-4 w-4 mr-2" />
-                          Send Email
-                        </Button>
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>

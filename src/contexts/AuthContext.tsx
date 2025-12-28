@@ -15,7 +15,7 @@ interface AuthContextType {
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   changeEmail: (currentPassword: string, newEmail: string) => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
-  updateProfileData: (fullName: string, nickname: string) => Promise<{ error: Error | null }>;
+  updateProfileData: (fullName: string, nickname: string, avatarUrl?: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -127,9 +127,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string) => {
     try {
+      console.log('Attempting to send password reset email to:', email);
       await sendPasswordResetEmail(auth, email);
+      console.log('Password reset email request successful');
       return { error: null };
     } catch (error) {
+      console.error('Error sending password reset email:', error);
       return { error: error instanceof Error ? error : new Error('Failed to send reset email') };
     }
   };
@@ -137,11 +140,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sendVerificationEmail = async () => {
     try {
       if (!auth.currentUser) {
+        console.warn('Attempted to send verification email but no user is logged in');
         throw new Error('No user logged in');
       }
+      console.log('Attempting to send verification email to:', auth.currentUser.email);
       await sendEmailVerification(auth.currentUser);
+      console.log('Verification email request successful');
       return { error: null };
     } catch (error) {
+      console.error('Error sending verification email:', error);
       return { error: error instanceof Error ? error : new Error('Failed to send verification email') };
     }
   };
@@ -237,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const updateProfileData = async (fullName: string, nickname: string) => {
+  const updateProfileData = async (fullName: string, nickname: string, avatarUrl?: string) => {
     try {
       if (!auth.currentUser) {
         throw new Error('No user logged in');
@@ -245,7 +252,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Update Firebase Auth profile
       await updateProfile(auth.currentUser, {
-        displayName: fullName
+        displayName: fullName,
+        photoURL: avatarUrl?.startsWith('fas ') ? null : avatarUrl // Don't put icon class in Firebase photoURL
       });
 
       // Update Firestore document
@@ -253,6 +261,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setDoc(userRef, {
         fullName,
         nickname,
+        avatar_url: avatarUrl,
+        profilePic: avatarUrl,
         updatedAt: new Date(),
       }, { merge: true });
 
