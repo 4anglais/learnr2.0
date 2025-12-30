@@ -175,7 +175,12 @@ export default function CreateTaskModal({ open, onOpenChange }: CreateTaskModalP
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: category.color }}
                         />
-                        {category.icon} {category.name}
+                        {category.icon && category.icon.startsWith('fa') ? (
+                          <i className={cn(category.icon, "text-xs w-4")} />
+                        ) : (
+                          <span className="w-4">{category.icon}</span>
+                        )}
+                        {category.name}
                       </span>
                     </SelectItem>
                   ))

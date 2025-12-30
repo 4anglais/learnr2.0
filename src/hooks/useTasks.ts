@@ -86,7 +86,7 @@ export function useTasks() {
     onSuccess: (data) => {
       // Tasks will update automatically via onSnapshot
       if (data.is_completed) {
-        toast.success('Task completed! 🎉');
+        toast.success('Task completed!');
       }
     },
     onError: (error) => {

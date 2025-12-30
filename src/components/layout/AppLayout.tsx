@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/profile/UserAvatar';
+import { VerificationReminder } from '@/components/auth/VerificationReminder';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -161,6 +162,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main Content */}
       <main className="container py-6">{children}</main>
+      <VerificationReminder />
     </div>
   );
 }

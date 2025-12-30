@@ -24,7 +24,7 @@ type SessionType = 'focus' | 'short_break' | 'long_break';
 export default function FocusPage() {
   const { tasks } = useTasks();
   const { createSession, completeSession, streak, completedSessionsCount, totalFocusMinutes } = useFocusSessions();
-  const { settings } = useUserSettings();
+  const { settings, updateSettings } = useUserSettings();
 
   const [sessionType, setSessionType] = useState<SessionType>('focus');
   const [sessionState, setSessionState] = useState<SessionState>('idle');
@@ -32,6 +32,11 @@ export default function FocusPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
+
+  // Local state for settings inputs to prevent jank
+  const [focusInput, setFocusInput] = useState(settings.focus_duration_minutes.toString());
+  const [shortBreakInput, setShortBreakInput] = useState(settings.short_break_minutes.toString());
+  const [longBreakInput, setLongBreakInput] = useState(settings.long_break_minutes.toString());
 
   const incompleteTasks = tasks.filter(t => !t.is_completed);
 
@@ -42,6 +47,13 @@ export default function FocusPage() {
       case 'long_break': return settings.long_break_minutes;
     }
   }, [settings]);
+
+  // Sync local inputs when settings change (e.g., from initial load or other pages)
+  useEffect(() => {
+    setFocusInput(settings.focus_duration_minutes.toString());
+    setShortBreakInput(settings.short_break_minutes.toString());
+    setLongBreakInput(settings.long_break_minutes.toString());
+  }, [settings.focus_duration_minutes, settings.short_break_minutes, settings.long_break_minutes]);
 
   useEffect(() => {
     if (sessionState === 'idle') {
@@ -70,9 +82,7 @@ export default function FocusPage() {
     } else {
       setSessionType('focus');
     }
-
-    setTimeRemaining(getDuration(sessionType === 'focus' ? 'short_break' : 'focus') * 60);
-  }, [currentSessionId, completeSession, sessionType, sessionsCompleted, settings.sessions_before_long_break, getDuration]);
+  }, [currentSessionId, completeSession, sessionType, sessionsCompleted, settings.sessions_before_long_break]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -128,6 +138,11 @@ export default function FocusPage() {
     focus: 'Focus',
     short_break: 'Short Break',
     long_break: 'Long Break',
+  };
+
+  const handleSettingUpdate = (key: keyof typeof settings, value: string, defaultValue: number) => {
+    const numValue = parseInt(value) || defaultValue;
+    updateSettings.mutate({ [key]: numValue });
   };
 
   return (
@@ -270,35 +285,44 @@ export default function FocusPage() {
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Focus (min)</Label>
+              <Label htmlFor="focus-duration">Focus (min)</Label>
               <Input
+                id="focus-duration"
                 type="number"
                 min={1}
                 max={60}
-                value={settings.focus_duration_minutes}
-                onChange={(e) => updateSettings.mutate({ focus_duration_minutes: parseInt(e.target.value) || 25 })}
+                value={focusInput}
+                onChange={(e) => setFocusInput(e.target.value)}
+                onBlur={() => handleSettingUpdate('focus_duration_minutes', focusInput, 25)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSettingUpdate('focus_duration_minutes', focusInput, 25)}
                 disabled={sessionState !== 'idle'}
               />
             </div>
             <div className="space-y-2">
-              <Label>Short Break (min)</Label>
+              <Label htmlFor="short-break-duration">Short Break (min)</Label>
               <Input
+                id="short-break-duration"
                 type="number"
                 min={1}
                 max={30}
-                value={settings.short_break_minutes}
-                onChange={(e) => updateSettings.mutate({ short_break_minutes: parseInt(e.target.value) || 5 })}
+                value={shortBreakInput}
+                onChange={(e) => setShortBreakInput(e.target.value)}
+                onBlur={() => handleSettingUpdate('short_break_minutes', shortBreakInput, 5)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSettingUpdate('short_break_minutes', shortBreakInput, 5)}
                 disabled={sessionState !== 'idle'}
               />
             </div>
             <div className="space-y-2">
-              <Label>Long Break (min)</Label>
+              <Label htmlFor="long-break-duration">Long Break (min)</Label>
               <Input
+                id="long-break-duration"
                 type="number"
                 min={1}
                 max={60}
-                value={settings.long_break_minutes}
-                onChange={(e) => updateSettings.mutate({ long_break_minutes: parseInt(e.target.value) || 15 })}
+                value={longBreakInput}
+                onChange={(e) => setLongBreakInput(e.target.value)}
+                onBlur={() => handleSettingUpdate('long_break_minutes', longBreakInput, 15)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSettingUpdate('long_break_minutes', longBreakInput, 15)}
                 disabled={sessionState !== 'idle'}
               />
             </div>

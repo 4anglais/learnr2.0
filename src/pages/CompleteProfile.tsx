@@ -9,17 +9,30 @@ import { toast } from 'sonner';
 import { Loader2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const AVATAR_OPTIONS = [
-  'fas fa-user|bg-blue-500',
-  'fas fa-user-graduate|bg-green-500',
-  'fas fa-user-tie|bg-indigo-500',
-  'fas fa-user-astronaut|bg-purple-500',
-  'fas fa-user-ninja|bg-rose-500',
-  'fas fa-user-secret|bg-slate-500',
-  'fas fa-user-md|bg-emerald-500',
-  'fas fa-user-nurse|bg-sky-500',
-  'fas fa-user-robot|bg-violet-500',
-  'fas fa-user-edit|bg-amber-500',
+const ICONS = [
+  'fas fa-user',
+  'fas fa-user-graduate',
+  'fas fa-user-tie',
+  'fas fa-user-astronaut',
+  'fas fa-user-ninja',
+  'fas fa-user-secret',
+  'fas fa-user-md',
+  'fas fa-user-nurse',
+  'fas fa-user-robot',
+  'fas fa-user-edit',
+];
+
+const COLORS = [
+  'bg-blue-500',
+  'bg-green-500',
+  'bg-indigo-500',
+  'bg-purple-500',
+  'bg-rose-500',
+  'bg-slate-500',
+  'bg-emerald-500',
+  'bg-sky-500',
+  'bg-violet-500',
+  'bg-amber-500',
 ];
 
 export default function CompleteProfile() {
@@ -28,7 +41,8 @@ export default function CompleteProfile() {
   const [isLoading, setIsLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [nickname, setNickname] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(AVATAR_OPTIONS[0]);
+  const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
+  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +52,8 @@ export default function CompleteProfile() {
     }
 
     setIsLoading(true);
-    const { error } = await updateProfileData(fullName, nickname, selectedAvatar || undefined);
+    const avatarValue = `${selectedIcon}|${selectedColor}`;
+    const { error } = await updateProfileData(fullName, nickname, avatarValue);
     setIsLoading(false);
 
     if (error) {
@@ -66,34 +81,55 @@ export default function CompleteProfile() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-3">
-                <Label>Choose Your Avatar</Label>
-                <div className="grid grid-cols-5 gap-4 py-2">
-                  {AVATAR_OPTIONS.map((avatarValue) => {
-                    const [iconClass, bgColor] = avatarValue.split('|');
-                    return (
+              <div className="space-y-4">
+                <Label>Customize Your Avatar</Label>
+                
+                <div className="flex justify-center py-4">
+                  <div className={cn("h-24 w-24 rounded-full flex items-center justify-center text-white shadow-lg transition-all transform hover:scale-105", selectedColor)}>
+                    <i className={cn(selectedIcon, "text-4xl")} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Choose Icon</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {ICONS.map((icon) => (
                       <button
-                        key={avatarValue}
+                        key={icon}
                         type="button"
-                        onClick={() => setSelectedAvatar(avatarValue)}
+                        onClick={() => setSelectedIcon(icon)}
                         className={cn(
-                          "relative h-12 w-12 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110",
-                          selectedAvatar === avatarValue 
-                            ? "border-primary scale-110 shadow-lg" 
-                            : "border-transparent opacity-70 hover:opacity-100"
+                          "h-10 w-10 rounded-lg border flex items-center justify-center transition-all",
+                          selectedIcon === icon 
+                            ? "border-primary bg-primary/10 text-primary" 
+                            : "border-border hover:border-primary/50 text-muted-foreground"
                         )}
                       >
-                        <div className={cn("w-full h-full rounded-full flex items-center justify-center text-white", bgColor)}>
-                          <i className={cn(iconClass, "text-lg")} />
-                        </div>
-                        {selectedAvatar === avatarValue && (
-                          <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5 border-2 border-background">
-                            <Check className="h-3 w-3" />
-                          </div>
-                        )}
+                        <i className={cn(icon, "text-sm")} />
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Choose Color</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setSelectedColor(color)}
+                        className={cn(
+                          "h-10 w-10 rounded-full border-2 flex items-center justify-center transition-all",
+                          selectedColor === color 
+                            ? "border-primary scale-110 shadow-md" 
+                            : "border-transparent hover:scale-105"
+                        )}
+                      >
+                        <div className={cn("w-full h-full rounded-full", color)} />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

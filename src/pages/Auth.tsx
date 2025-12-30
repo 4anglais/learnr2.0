@@ -26,7 +26,7 @@ export default function Auth() {
   const queryClient = useQueryClient();
 
   const from = location.state?.from?.pathname || "/";
-  const { user, signIn, signUp, signInWithGoogle, resetPassword, loading: authLoading } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle, resetPassword, loading: authLoading, sendVerificationEmail } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   // Login form state
@@ -44,7 +44,11 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate(from, { replace: true });
+      if (user.emailVerified) {
+        navigate(from, { replace: true });
+      } else {
+        navigate('/verify-email', { replace: true });
+      }
     }
   }, [user, navigate, from]);
 
@@ -100,9 +104,10 @@ export default function Auth() {
         toast.error(error.message);
       }
     } else {
+      await sendVerificationEmail();
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success('Account created successfully!');
-      navigate(from, { replace: true });
+      toast.success('Account created! Please check your email to verify.');
+      navigate('/verify-email', { replace: true });
     }
   };
 

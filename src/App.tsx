@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import FocusPage from "./pages/FocusPage";
 import PlannerPage from "./pages/PlannerPage";
 import CompleteProfile from "./pages/CompleteProfile";
+import VerifyEmail from "./pages/VerifyEmail";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
@@ -33,6 +34,7 @@ const App = () => (
             <OnboardingProvider>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />

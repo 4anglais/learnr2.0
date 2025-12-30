@@ -74,11 +74,11 @@ export const categoryService = {
 
   async createDefaultCategories(userId: string): Promise<void> {
     const DEFAULT_CATEGORIES = [
-      { name: 'Homework', color: '#8b5cf6', icon: '📚' },
-      { name: 'Exam Prep', color: '#ef4444', icon: '📝' },
-      { name: 'Projects', color: '#22c55e', icon: '🎯' },
-      { name: 'Reading', color: '#f59e0b', icon: '📖' },
-      { name: 'Revision', color: '#0ea5e9', icon: '🔄' },
+      { name: 'Homework', color: '#8b5cf6', icon: 'fas fa-book' },
+      { name: 'Exam Prep', color: '#ef4444', icon: 'fas fa-edit' },
+      { name: 'Projects', color: '#22c55e', icon: 'fas fa-project-diagram' },
+      { name: 'Reading', color: '#f59e0b', icon: 'fas fa-book-open' },
+      { name: 'Revision', color: '#0ea5e9', icon: 'fas fa-sync' },
     ];
 
     const promises = DEFAULT_CATEGORIES.map(cat => 

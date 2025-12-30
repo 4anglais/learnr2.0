@@ -109,7 +109,14 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
                 borderColor: `${task.categories.color}40`,
               }}
             >
-              {task.categories.icon} {task.categories.name}
+              <div className="flex items-center gap-1">
+                {task.categories.icon && task.categories.icon.startsWith('fa') ? (
+                  <i className={cn(task.categories.icon, "text-[10px]")} />
+                ) : (
+                  <span>{task.categories.icon}</span>
+                )}
+                {task.categories.name}
+              </div>
             </Badge>
           )}
 

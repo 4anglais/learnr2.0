@@ -5,7 +5,7 @@ It combines **task management, calendar planning, and progress tracking** in one
 
 ---
 
-## **🚀 Features**
+## **Features**
 
 ### **Dashboard**
 - **Personalized greeting**  

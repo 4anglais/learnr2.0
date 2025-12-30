@@ -157,7 +157,7 @@ export function OnboardingTutorial({ open, onOpenChange, onComplete, forceShow =
                 className="flex-1 h-10 md:h-12 text-xs md:text-sm font-bold gradient-primary shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform rounded-xl" 
                 onClick={handleNext}
               >
-                {selectedIndex === slides.length - 1 ? "Start Learning" : "Next Feature"}
+                {selectedIndex === slides.length - 1 ? "All Done!" : "Next Feature"}
               </Button>
             </div>
           </div>

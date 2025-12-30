@@ -5,11 +5,11 @@ export const verifyFirestoreIntegration = async () => {
   const user = auth.currentUser;
 
   if (!user) {
-    console.error("❌ No user logged in. Please log in first.");
+    console.error("No user logged in. Please log in first.");
     return;
   }
 
-  console.log(`🚀 Starting Firestore verification for user: ${user.uid}`);
+  console.log(`Starting Firestore verification for user: ${user.uid}`);
 
   try {
     // 1. Create User Document
@@ -23,7 +23,7 @@ export const verifyFirestoreIntegration = async () => {
       updatedAt: serverTimestamp(),
       username: `user_${user.uid.substring(0, 5)}` // Fallback username
     }, { merge: true });
-    console.log("✅ User document created/updated successfully.");
+    console.log("User document created/updated successfully.");
 
     // 2. Create Category Document
     console.log("Creating Category Document...");
@@ -32,10 +32,10 @@ export const verifyFirestoreIntegration = async () => {
       user_id: user.uid,
       name: 'Test Category',
       color: '#FF5733',
-      icon: '📝',
+      icon: 'fas fa-vial',
       created_at: serverTimestamp()
     });
-    console.log(`✅ Category document created with ID: ${categoryDoc.id}`);
+    console.log(`Category document created with ID: ${categoryDoc.id}`);
 
     // 3. Create Task Document
     console.log("Creating Task Document...");
@@ -50,7 +50,7 @@ export const verifyFirestoreIntegration = async () => {
       created_at: serverTimestamp(),
       updated_at: serverTimestamp()
     });
-    console.log(`✅ Task document created with ID: ${taskDoc.id}`);
+    console.log(`Task document created with ID: ${taskDoc.id}`);
 
     // 4. Test Error Handling (Invalid User ID)
     console.log("Testing Error Handling (Security Rules)...");
@@ -62,18 +62,18 @@ export const verifyFirestoreIntegration = async () => {
         priority: 'low',
         created_at: serverTimestamp()
       });
-      console.warn("⚠️ SECURITY WARNING: Created a task with wrong user_id! Security rules might be too permissive.");
+      console.warn("SECURITY WARNING: Created a task with wrong user_id! Security rules might be too permissive.");
     } catch (error) {
-      console.log("✅ Expected Error caught:", error);
+      console.log("Expected Error caught:", error);
       console.log("This confirms that security rules are blocking invalid writes (or all writes).");
     }
 
-    console.log("🎉 Firestore verification script finished.");
+    console.log("Firestore verification script finished.");
 
   } catch (error) {
-    console.error("❌ Firestore verification failed:", error);
+    console.error("Firestore verification failed:", error);
     if (JSON.stringify(error).includes("permission-denied")) {
-        console.error("💡 NOTE: If you got 'permission-denied', check your firestore.rules.");
+        console.error("NOTE: If you got 'permission-denied', check your firestore.rules.");
     }
   }
 };

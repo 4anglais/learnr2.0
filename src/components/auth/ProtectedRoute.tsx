@@ -28,8 +28,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   const isProfileComplete = profile?.fullName && profile?.nickname;
   const isCompletingProfile = location.pathname === '/complete-profile';
+  const isVerifyingEmail = location.pathname === '/verify-email';
+  const isGmail = user.email?.endsWith('@gmail.com');
 
-  if (!isProfileComplete && !isCompletingProfile) {
+  // For new users (no complete profile), enforce email verification ONLY for Gmail users
+  // Non-Gmail users (iCloud, etc.) can skip this step via the "Verify later" button
+  if (!user.emailVerified && !isProfileComplete && !isVerifyingEmail && isGmail) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
+  if (!isProfileComplete && !isCompletingProfile && !isVerifyingEmail) {
     return <Navigate to="/complete-profile" replace />;
   }
 

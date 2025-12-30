@@ -16,6 +16,7 @@ interface AuthContextType {
   changeEmail: (currentPassword: string, newEmail: string) => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
   updateProfileData: (fullName: string, nickname: string, avatarUrl?: string) => Promise<{ error: Error | null }>;
+  reloadUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +24,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const reloadUser = async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser({ ...auth.currentUser });
+    }
+  };
 
   const initializeUser = async (currentUser: User, fullName?: string, nickname?: string) => {
     try {
@@ -122,6 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear dismissal flag on sign out so they see it again next login
+    sessionStorage.removeItem('verification_reminder_dismissed');
     await firebaseSignOut(auth);
   };
 
@@ -274,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, sendVerificationEmail, changePassword, changeEmail, deleteAccount, updateProfileData }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, sendVerificationEmail, changePassword, changeEmail, deleteAccount, updateProfileData, reloadUser }}>
       {children}
     </AuthContext.Provider>
   );

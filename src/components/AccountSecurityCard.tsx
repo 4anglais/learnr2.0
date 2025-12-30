@@ -11,7 +11,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, CheckCircle2 } from 'lucide-react';
 
 export function AccountSecurityCard() {
   const { user } = useAuth();
@@ -97,7 +97,10 @@ export function AccountSecurityCard() {
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
                   {user?.emailVerified ? (
-                    <span className="text-green-600">✓ Email verified</span>
+                    <span className="text-green-600 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Email verified
+                    </span>
                   ) : (
                     <span className="text-amber-600">Email not verified</span>
                   )}

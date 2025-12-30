@@ -17,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Search, Filter, CheckCircle2 } from 'lucide-react';
 import { isToday, isFuture, isPast, parseISO } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 type FilterType = 'all' | 'today' | 'upcoming' | 'completed' | 'high-priority';
 type SortType = 'due-date' | 'priority' | 'created';
@@ -134,7 +135,14 @@ export default function Tasks() {
               <SelectItem value="all">All Categories</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
+                  <div className="flex items-center gap-2">
+                    {cat.icon && cat.icon.startsWith('fa') ? (
+                      <i className={cn(cat.icon, "text-xs w-4")} />
+                    ) : (
+                      <span className="w-4">{cat.icon}</span>
+                    )}
+                    {cat.name}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>

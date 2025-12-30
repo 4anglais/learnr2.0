@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { BarChart3, TrendingUp, CheckCircle2, Clock, Target } from 'lucide-react';
 import { startOfWeek, endOfWeek, isWithinInterval, parseISO, format, subDays } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function ProgressPage() {
   const { tasks } = useTasks();
@@ -212,8 +213,13 @@ export default function ProgressPage() {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: category.color }}
                         />
-                        <span className="font-medium text-foreground">
-                          {category.icon} {category.name}
+                        <span className="font-medium text-foreground flex items-center gap-2">
+                          {category.icon && category.icon.startsWith('fa') ? (
+                            <i className={cn(category.icon, "text-xs")} />
+                          ) : (
+                            <span>{category.icon}</span>
+                          )}
+                          {category.name}
                         </span>
                       </div>
                       <Progress value={category.percentage} className="h-2 mb-2" />
@@ -232,7 +238,6 @@ export default function ProgressPage() {
         {completionRate >= 80 && (
           <Card className="border-success/20 bg-success/5">
             <CardContent className="p-6 text-center">
-              <p className="text-2xl mb-2">🎉</p>
               <h3 className="text-lg font-semibold text-success">Amazing Progress!</h3>
               <p className="text-muted-foreground">
                 You're crushing it! Keep up the great work.
