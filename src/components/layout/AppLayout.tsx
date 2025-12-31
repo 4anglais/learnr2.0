@@ -60,9 +60,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container flex h-16 items-center justify-between">
-          {/* Logo - just the name */}
+          {/* Logo Name */}
           <Link to="/" className="flex items-center gap-2">
-            <span className="font-bold text-xl text-foreground tracking-tight">learnr</span>
+            <span className="font-bold text-xl text-foreground tracking-tight">luanr</span>
           </Link>
 
           {/* Desktop Nav */}
