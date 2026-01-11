@@ -24,7 +24,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   });
 
   const isDashboard = location.pathname === '/';
-  const showFloatingButton = (status.isSecondVisit || isDashboard) && !status.isNewUser && !open;
+  const showFloatingButton = !!user && (status.isSecondVisit || isDashboard) && !status.isNewUser && !open;
 
   useEffect(() => {
     if (loading || !user) return;
