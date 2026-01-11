@@ -118,7 +118,7 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Features Section - Unique Animation: Staggered Pop-in Grid */}
+        {/* Features Section - Unique Animation: Staggered Pop-in Grid & Gradient Cards */}
         <section id="features" className="py-24 bg-secondary/30 relative">
           <div className="container">
             <div className="text-center max-w-2xl mx-auto mb-16 space-y-4 animate-reveal">
@@ -128,8 +128,8 @@ const Landing = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {/* Feature 1 - Indigo/Blue */}
-              <div className="p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-2 group animate-reveal delay-100">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform">
+              <div className="p-8 rounded-2xl bg-gradient-to-b from-card to-blue-500/5 border border-border/50 shadow-sm hover:shadow-card-hover hover:border-blue-500/30 transition-all duration-300 hover:-translate-y-2 group animate-reveal delay-100">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center mb-6 group-hover:rotate-12 group-hover:scale-110 transition-transform">
                   <Layout className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold mb-3">Smart Dashboard</h3>
@@ -137,7 +137,7 @@ const Landing = () => {
               </div>
 
               {/* Feature 2 - Purple */}
-              <div className="p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-2 group animate-reveal delay-200">
+              <div className="p-8 rounded-2xl bg-gradient-to-b from-card to-purple-500/5 border border-border/50 shadow-sm hover:shadow-card-hover hover:border-purple-500/30 transition-all duration-300 hover:-translate-y-2 group animate-reveal delay-200">
                 <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Clock className="w-6 h-6" />
                 </div>
@@ -146,8 +146,8 @@ const Landing = () => {
               </div>
 
               {/* Feature 3 - Emerald/Green */}
-              <div className="p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-2 group animate-reveal delay-300">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-6 group-hover:-rotate-12 transition-transform">
+              <div className="p-8 rounded-2xl bg-gradient-to-b from-card to-emerald-500/5 border border-border/50 shadow-sm hover:shadow-card-hover hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-2 group animate-reveal delay-300">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-6 group-hover:-rotate-12 group-hover:scale-110 transition-transform">
                   <BookOpen className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold mb-3">Study Roadmaps</h3>
@@ -155,8 +155,8 @@ const Landing = () => {
               </div>
 
               {/* Feature 4 - Amber/Orange */}
-              <div className="p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-2 group animate-reveal delay-100">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-6 group-hover:bounce transition-transform">
+              <div className="p-8 rounded-2xl bg-gradient-to-b from-card to-amber-500/5 border border-border/50 shadow-sm hover:shadow-card-hover hover:border-amber-500/30 transition-all duration-300 hover:-translate-y-2 group animate-reveal delay-100">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:animate-pulse transition-transform">
                   <Calendar className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold mb-3">Integrated Calendar</h3>
@@ -164,7 +164,7 @@ const Landing = () => {
               </div>
 
               {/* Feature 5 - Rose/Red */}
-              <div className="p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-2 group animate-reveal delay-200">
+              <div className="p-8 rounded-2xl bg-gradient-to-b from-card to-rose-500/5 border border-border/50 shadow-sm hover:shadow-card-hover hover:border-rose-500/30 transition-all duration-300 hover:-translate-y-2 group animate-reveal delay-200">
                 <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Trophy className="w-6 h-6" />
                 </div>
@@ -173,8 +173,8 @@ const Landing = () => {
               </div>
 
               {/* Feature 6 - Cyan/Teal */}
-              <div className="p-8 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-2 group animate-reveal delay-300">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-600 flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
+              <div className="p-8 rounded-2xl bg-gradient-to-b from-card to-cyan-500/5 border border-border/50 shadow-sm hover:shadow-card-hover hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-2 group animate-reveal delay-300">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-600 flex items-center justify-center mb-6 group-hover:rotate-6 group-hover:scale-110 transition-transform">
                   <Target className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold mb-3">Goal Setting</h3>
@@ -250,33 +250,33 @@ const Landing = () => {
         </section>
 
         {/* CTA Section - Unique Animation: Orbiting & Rotating Particles */}
-        <section className="py-24 bg-emerald-600 text-white relative overflow-hidden">
+        <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-950 to-black text-white relative overflow-hidden border-y border-white/5">
           {/* Animated background elements */}
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
-          <div className="absolute top-10 left-10 w-24 h-24 border-4 border-white/20 rounded-xl animate-float-slow" style={{ transform: 'rotate(45deg)' }} />
-          <div className="absolute bottom-10 right-10 w-32 h-32 border-4 border-white/10 rounded-2xl animate-float" style={{ transform: 'rotate(-20deg)' }} />
-          <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-white/5 rounded-lg animate-blob" />
+          <div className="absolute top-10 left-10 w-24 h-24 border-4 border-white/10 rounded-xl animate-float-slow" style={{ transform: 'rotate(45deg)' }} />
+          <div className="absolute bottom-10 right-10 w-32 h-32 border-4 border-white/5 rounded-2xl animate-float" style={{ transform: 'rotate(-20deg)' }} />
+          <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-blue-500/5 rounded-lg animate-blob" />
           <div className="absolute top-1/4 right-1/4 w-20 h-20 border-2 border-white/5 rounded-full animate-tilt" />
           
           <div className="container text-center max-w-3xl mx-auto space-y-8 relative z-10">
             <h2 className="text-3xl md:text-5xl font-bold leading-tight animate-reveal">Ready to transform your study habits?</h2>
-            <p className="text-xl text-emerald-50 animate-reveal delay-100">Join thousands of students who are already using Learnr to stay ahead of their academic goals.</p>
+            <p className="text-xl text-slate-400 animate-reveal delay-100">Join thousands of students who are already using Learnr to stay ahead of their academic goals.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-reveal delay-200">
               {/* Rotating squares decoration */}
               <div className="hidden lg:flex gap-4 mr-8">
-                <div className="w-12 h-12 rounded-xl bg-white/20 animate-[spin_3s_linear_infinite] [animation-iteration-count:0.75]" />
-                <div className="w-8 h-8 rounded-lg bg-white/10 animate-[spin_5s_linear_infinite_reverse] mt-4" />
+                <div className="w-12 h-12 rounded-xl bg-white/10 animate-[spin_3s_linear_infinite] [animation-iteration-count:0.75]" />
+                <div className="w-8 h-8 rounded-lg bg-white/5 animate-[spin_5s_linear_infinite_reverse] mt-4" />
               </div>
               
               <Link to="/auth">
-                <Button size="lg" className="bg-white text-emerald-600 hover:bg-emerald-50 w-full sm:w-auto px-10 h-14 text-lg font-bold shadow-lg hover:scale-105 active:scale-95 transition-all">
+                <Button size="lg" className="bg-white text-slate-950 hover:bg-slate-200 w-full sm:w-auto px-10 h-14 text-lg font-bold shadow-glow hover:scale-105 active:scale-95 transition-all">
                   Get Started for Free
                 </Button>
               </Link>
 
               <div className="hidden lg:flex gap-4 ml-8">
-                <div className="w-12 h-12 rounded-xl bg-white/20 animate-[spin_4s_linear_infinite] [animation-delay:1s]" />
-                <div className="w-6 h-6 rounded-md bg-white/10 animate-float ml-2" />
+                <div className="w-12 h-12 rounded-xl bg-white/10 animate-[spin_4s_linear_infinite] [animation-delay:1s]" />
+                <div className="w-6 h-6 rounded-md bg-white/5 animate-float ml-2" />
               </div>
             </div>
           </div>
