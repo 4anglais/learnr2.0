@@ -37,7 +37,7 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-  
+
   // Reset password state
   const [resetEmail, setResetEmail] = useState('');
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
@@ -154,12 +154,24 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md animate-fade-up">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Background Blobs */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-blob"></div>
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-accent/40 rounded-full blur-3xl animate-blob delay-2000"></div>
+        <div className="absolute -bottom-8 left-1/2 w-96 h-96 bg-blue-400/30 rounded-full blur-3xl animate-blob delay-4000"></div>
+      </div>
+
+      <div className="w-full max-w-md animate-fade-up relative z-10 glass rounded-xl p-1">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">learnr</h1>
-          <p className="text-muted-foreground mt-2">Your student productivity companion</p>
+        <div className="flex flex-col items-center justify-center mb-8 pt-6">
+          <Link to="/" className="flex items-center gap-2 mb-2 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground font-bold text-2xl">
+              l
+            </div>
+            <span className="text-2xl font-bold tracking-tight">learnr</span>
+          </Link>
+          <p className="text-muted-foreground text-center">Your student productivity companion</p>
         </div>
 
         <Card className="border-border/50 shadow-card">
@@ -172,7 +184,7 @@ export default function Auth() {
             </CardHeader>
 
             <CardContent>
-              <TabsContent value="login" className="mt-0">
+              <TabsContent value="login" className="mt-0 animate-in fade-in slide-in-from-left-4 duration-500 ease-out">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
@@ -273,7 +285,7 @@ export default function Auth() {
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup" className="mt-0">
+              <TabsContent value="signup" className="mt-0 animate-in fade-in slide-in-from-right-4 duration-500 ease-out">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
