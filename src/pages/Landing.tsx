@@ -65,7 +65,7 @@ const Landing = () => {
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-primary transition-colors">How it works</a>
-            <a href="#about" className="hover:text-primary transition-colors">About</a>
+            <a href="#about" className="hover:text-primary transition-colors"></a>
           </nav>
           <div className="flex items-center gap-4">
             <Link to="/auth">
@@ -93,7 +93,7 @@ const Landing = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
-                New: Study Roadmaps AI
+                Coming Soon: Create Roadmaps With AI
               </div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight font-['Fredoka'] animate-reveal delay-100">
                 Master your studies with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-emerald-500 animate-pulse">intelligence</span>
@@ -104,7 +104,7 @@ const Landing = () => {
               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-reveal delay-300">
                 <Link to="/auth" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto gradient-primary text-lg h-12 px-8 shadow-glow hover:scale-105 transition-transform">
-                    Get Started Free
+                    Get Started 
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
