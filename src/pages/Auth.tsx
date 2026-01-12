@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AuthBackground } from '@/components/auth/AuthBackground';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ export default function Auth() {
   const from = location.state?.from?.pathname || "/";
   const { user, signIn, signUp, signInWithGoogle, resetPassword, loading: authLoading, sendVerificationEmail } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -147,35 +149,43 @@ export default function Auth() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-950">
+        <AuthBackground />
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-4xl shadow-glow animate-float">
+            l
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight font-['Fredoka']">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 animate-pulse">learnr</span>
+          </h1>
+          <div className="flex gap-1 mt-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.3s]"></div>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.15s]"></div>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      {/* Background Blobs */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-blob"></div>
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-accent/40 rounded-full blur-3xl animate-blob delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-96 h-96 bg-blue-400/30 rounded-full blur-3xl animate-blob delay-4000"></div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      <AuthBackground />
 
-      <div className="w-full max-w-md animate-fade-up relative z-10 glass rounded-xl p-1">
+      <div className="w-full max-w-md relative z-10 glass rounded-xl p-1 shadow-glow animate-reveal">
         {/* Logo */}
         <div className="flex flex-col items-center justify-center mb-8 pt-6">
-          <Link to="/" className="flex items-center gap-2 mb-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground font-bold text-2xl">
+          <Link to="/" className="flex items-center gap-2 mb-2 hover:opacity-80 transition-opacity animate-float-slow">
+            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground font-bold text-2xl shadow-lg">
               l
             </div>
             <span className="text-2xl font-bold tracking-tight">learnr</span>
           </Link>
-          <p className="text-muted-foreground text-center">Your student productivity companion</p>
+          <p className="text-muted-foreground text-center animate-fade-in delay-200">Your student productivity companion</p>
         </div>
 
-        <Card className="border-border/50 shadow-card">
-          <Tabs defaultValue="login" className="w-full">
+        <Card className="border-border/50 shadow-card overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <CardHeader className="pb-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>
@@ -183,8 +193,11 @@ export default function Auth() {
               </TabsList>
             </CardHeader>
 
-            <CardContent>
-              <TabsContent value="login" className="mt-0 animate-in fade-in slide-in-from-left-4 duration-500 ease-out">
+            <CardContent className="relative">
+              <TabsContent 
+                value="login" 
+                className="mt-0 data-[state=inactive]:hidden data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-left-8 data-[state=active]:duration-500 data-[state=active]:ease-out"
+              >
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
@@ -285,7 +298,10 @@ export default function Auth() {
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup" className="mt-0 animate-in fade-in slide-in-from-right-4 duration-500 ease-out">
+              <TabsContent 
+                value="signup" 
+                className="mt-0 data-[state=inactive]:hidden data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-right-8 data-[state=active]:duration-500 data-[state=active]:ease-out"
+              >
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
